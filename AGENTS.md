@@ -97,11 +97,34 @@ Contrib skills are edit-in-place at `~/.skills-manager/skills/<name>/`. `diff` s
 
 Self-authored skills (`authored/<name>/`) are not patched — the directory is the source.
 
+## Adoption
+
+For users with skills already installed in tool dirs (e.g. real `~/.claude/skills/<name>/` directories from before SSOT). `adopt` is opt-in and never runs implicitly — `init` only reports candidates via `doctor`-style output.
+
+Scan rules in `src/core/adopt-scan.ts`:
+
+- Walk every linkable tool's link target (`~/.claude/skills/`, etc.).
+- Candidate = real directory containing `SKILL.md`. Symlinks are ignored (already managed somewhere).
+- Skip names already present in `skills.json`.
+- Group by skill name across tools; classify as **single**, **duplicate-identical** (sha256 of tree matches), or **duplicate-conflict**.
+
+Adoption (`adopt <name>` / `adopt --all`):
+
+1. Move winning copy into `authored/<name>/`. v1 always adopts as `authored`; contrib adoption deferred until `add` is wired.
+2. Identical duplicates: silently delete the redundant copies.
+3. Conflicting duplicates: require `--from <tool>`; back losing copies up to `.cache/adopted-backup/<iso>/<tool>/<name>/`. Optional `--keep-other-as <new-name>` to adopt the loser as a separately-named authored skill instead of discarding it.
+4. Replace each original location with a symlink into `authored/<name>/`.
+5. Record in `skills.json` as `kind: "authored"`.
+6. `--dry-run` prints the plan only.
+
+`adopt --all` adopts every non-conflicting candidate and lists the conflicts at the end.
+
 ## CLI surface
 
 | Command | Status | Effect |
 |---------|--------|--------|
 | `init [--local]` | Wired | Create SSOT root, scaffold manifest+state, detect tools, install bundled agent skill, link into native tools. `--local` → `<cwd>/.skills-manager/`. |
+| `adopt [<name>] [--all]` | Wired | Pull pre-existing real-dir skills out of detected tool dirs into the SSOT. Default kind: `authored`. Flags: `--from <tool>` and `--keep-other-as <name>` for cross-tool conflicts; `--dry-run`. |
 | `add <source>` | Stub | Install contrib skill from a source. |
 | `list` | Stub | List installed skills with source + ref + customized flag. |
 | `remove <skill>` | Stub | Remove skill, patch, pristine, tool symlinks. |
@@ -122,9 +145,13 @@ Stubs throw `NotImplemented`; surface is stable and discoverable.
 
 `src/bundled-skills/skills-manager/SKILL.md`. Copied (not symlinked) into `<root>/authored/skills-manager/` during `init`, then linked into each native-SKILL.md tool dir. Teaches the consuming agent when to invoke the CLI.
 
+## Roadmap
+
+Phased plan, plus the explicit list of features considered and deferred, lives in [ROADMAP.md](ROADMAP.md). Check it before proposing a new direction.
+
 ## Conventions
 
-- **Node:** ≥ 20.
+- **Node:** ≥ 22.
 - **Package manager:** pnpm.
 - **Language:** TypeScript, strict mode.
 - **Lint/format:** Prettier defaults; ESLint with `@typescript-eslint` (added when needed).

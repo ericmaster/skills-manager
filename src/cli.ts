@@ -10,6 +10,7 @@ import { runNew } from "./commands/new.js";
 import { runTool } from "./commands/tool.js";
 import { runValidate } from "./commands/validate.js";
 import { runDoctor } from "./commands/doctor.js";
+import { runAdopt } from "./commands/adopt.js";
 
 interface ParsedArgs {
   command: string | undefined;
@@ -49,6 +50,7 @@ Usage: skills-manager <command> [args] [flags]
 
 Commands:
   init [--local]              Bootstrap the SSOT, detect tools, install the manager skill.
+  adopt [<name>] [--all]      Adopt skills already living under detected tool dirs.
   add <source>                Install a contrib skill from a git repo, URL, or local path.
   list                        List installed skills.
   remove <skill>              Uninstall a skill.
@@ -63,7 +65,7 @@ Commands:
   doctor                      Print environment and configuration diagnostics.
   help                        Show this help.
 
-In v1, only \`init\` is fully implemented. Other commands are stubs.
+In v1, \`init\` and \`adopt\` are fully implemented. Other commands are stubs.
 
 See AGENTS.md for full documentation.`;
 
@@ -79,6 +81,8 @@ export async function main(rawArgs: string[]): Promise<number> {
     switch (command) {
       case "init":
         return await runInit({ local: flags.local === true });
+      case "adopt":
+        return await runAdopt({ name: positional[0], flags });
       case "add":
         return await runAdd({ source: positional[0], flags });
       case "list":

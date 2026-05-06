@@ -46,6 +46,7 @@ node bin/skills-manager.js init
 | Command | What it does |
 |---------|--------------|
 | `init [--local]` | Set up the SSOT and link the bundled agent skill into all detected tools. |
+| `adopt [<name>] [--all]` | Pull skills already living under detected tool dirs into the SSOT. |
 | `add <source>` | Install a contrib skill from a git repo, direct URL, or local path. |
 | `list` | List installed skills with source, ref, and customized flag. |
 | `remove <skill>` | Delete a skill, its patch, its pristine cache, and all tool symlinks. |
@@ -59,6 +60,35 @@ node bin/skills-manager.js init
 | `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. |
 | `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. |
 | `doctor` | Print a summary of your environment, dependencies, and any warnings. |
+
+## Adopting existing skills
+
+Already running with skills under `~/.claude/skills/`, `~/.hermes/skills/`, or another tool's directory? `init` won't touch them — adoption is explicit.
+
+```bash
+skills-manager adopt              # list adoptable skills + any conflicts
+skills-manager adopt my-skill     # adopt one
+skills-manager adopt --all        # adopt every non-conflicting candidate
+skills-manager adopt my-skill --dry-run   # preview without changes
+```
+
+What `adopt` does for each skill:
+
+1. Moves the skill directory into `~/.skills-manager/authored/<name>/`.
+2. Replaces the original location with a symlink into the SSOT.
+3. Records the skill in `skills.json` as a self-authored skill.
+
+Adopted skills become `authored` skills (no upstream tracking, no patches). If a skill is the same content across multiple tools, the redundant copies are removed and every tool ends up symlinked to the one canonical copy.
+
+If the same skill name exists in multiple tools with **different** content, `adopt` stops and asks you to pick:
+
+```bash
+# Take the Claude Code copy; back up the others into .cache/adopted-backup/.
+skills-manager adopt my-skill --from claude-code
+
+# Take the Claude Code copy AND keep the hermes copy as a separately named skill.
+skills-manager adopt my-skill --from claude-code --keep-other-as my-skill-hermes
+```
 
 ## Sources
 
@@ -120,14 +150,7 @@ Non-native tools are still listed in `skills-manager doctor` output. Adapters th
 
 ## Roadmap
 
-- Real `add`, `update`, `diff`, `save-patch`, `customize`, `remove`, `list`, `validate` implementations.
-- Subprocess integration with `vercel-labs/skills`.
-- 3-way patch application with `git apply --3way` and the `--continue` flow.
-- `validate` wrapping `skills-check`.
-- Curated starter sets — productivity, coding, engineering, design — so `init --preset coding` provisions a useful baseline.
-- Adapters for non-native-`SKILL.md` tools (Cursor `.mdc`, AGENTS.md-style consumers, Aider, OpenCode, Crush, Gemini CLI).
-- Project-level `.skills-manager/` flows for team-shared workspace skills (commit hygiene, lockfile sharing).
-- Programmatic API export from the package, once stable.
+See [ROADMAP.md](ROADMAP.md) for what's planned, what's next, and what's been considered and deferred (with rationale).
 
 ## Contributing
 
