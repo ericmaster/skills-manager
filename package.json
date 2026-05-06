@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "test": "node --test --enable-source-maps tests/**/*.test.js",
+    "test": "node --test --enable-source-maps tests/*.test.js",
     "pretest": "tsc",
     "clean": "rm -rf dist"
   },
