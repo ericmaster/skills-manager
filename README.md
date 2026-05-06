@@ -1,4 +1,8 @@
-# skills-manager
+# Skills Manager
+<p align="center">
+  <img src="docs/media/header.jpg" alt="Skills Manager Banner" width="100%">
+</p>
+
 
 A CLI and default-installed agent skill for managing [agentskills.io](https://agentskills.io/specification)-format skills across every AI agent tool on your machine.
 
