@@ -11,3 +11,5 @@ dist-tests/
 # editors
 .idea/
 .vscode/
+
+.tmp_*
