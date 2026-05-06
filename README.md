@@ -3,6 +3,7 @@
   <img src="docs/media/header.jpg" alt="Skills Manager Banner" width="100%">
 </p>
 
+[![CI](https://github.com/ericmaster/skills-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ericmaster/skills-manager/actions/workflows/ci.yml)
 
 A CLI and default-installed agent skill for managing [agentskills.io](https://agentskills.io/specification)-format skills across every AI agent tool on your machine.
 
