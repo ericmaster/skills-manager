@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-tests/
+.DS_Store
+*.log
+.env
+.env.local
+.tsbuildinfo
+*.tsbuildinfo
+
+# editors
+.idea/
+.vscode/

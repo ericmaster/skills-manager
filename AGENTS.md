@@ -1,0 +1,133 @@
+# skills-manager
+
+> Single source of truth for project development. `CLAUDE.md` points here.
+> Keep lean: minimum words, no fluff or history. Architecture and functional requirements only — user-facing docs live in [README.md](README.md). Update with every drift.
+
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| **Skill** | Directory matching the [agentskills.io spec](https://agentskills.io/specification): a `SKILL.md` with required `name` and `description` frontmatter, optionally `scripts/`, `references/`, `assets/`. Extra frontmatter preserved verbatim. |
+| **Source** | Origin of a contrib skill: git repo (multi- or single-skill), direct URL to file/tarball, or local path. |
+| **Contrib skill** | Skill installed from an external source. Tracked in `skills.json`, mirrored to pristine cache, optionally patched. |
+| **Self-authored skill** | Skill the user wrote locally. Lives in `authored/`, no pristine, no patch. |
+| **Pristine** | Unmodified contrib skill at resolved upstream ref, kept in `.cache/pristine/<name>@<ref>/`. Diff base. |
+| **Patch** | Unified diff at `patches/<name>.patch` representing user customization vs. pristine. |
+| **SSOT** | `~/.skills-manager/` (user) or `<workspace>/.skills-manager/` (workspace). The only place skill files live; tool dirs hold symlinks. |
+| **Scope** | *user-global* (default) or *workspace-local*. Fully isolated — no inheritance. |
+| **Tool** | AI agent CLI/IDE that consumes skills. Detected by filesystem probes. |
+
+## Directory layout
+
+```
+~/.skills-manager/
+├── skills.json              # declared skills + sources
+├── skills.lock.json         # resolved refs/commits/checksums
+├── state.json               # detected tools, link targets, cache stamps
+├── skills/<name>/SKILL.md   # contrib skills, linked into tools
+├── authored/<name>/SKILL.md # self-authored skills, linked into tools
+├── patches/<name>.patch
+└── .cache/pristine/<name>@<ref>/
+```
+
+Workspace scope (`<workspace>/.skills-manager/`) is identical in shape and fully isolated from global. Duplicate skill names print a warning; do not block.
+
+## Layer cake
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Bundled `skills-manager` agent skill (SKILL.md)        │  ← agents read
+│  Tells the agent when/how to call the CLI               │
+├─────────────────────────────────────────────────────────┤
+│  `skills-manager` CLI (Node/TypeScript)                 │  ← humans run
+│  Owns SSOT, manifest, patches, update orchestration     │
+├─────────────────────────────────────────────────────────┤
+│  vercel-labs/skills CLI (subprocess)                    │  ← we wrap
+│  Source resolution, multi-agent linking primitives      │
+└─────────────────────────────────────────────────────────┘
+```
+
+The CLI shells out to `npx skills <verb> ...` for source resolution and tool installation primitives. Invocation contracts stubbed in `src/core/skills-cli.ts`, finalized when `add` / `update` are implemented.
+
+## Tool detection
+
+`src/core/tool-detect.ts` probes for canonical config dirs and binaries on `PATH`. Runs every invocation; cached in `state.json`, invalidated when probe outputs change.
+
+| Tool | Probe | Native SKILL.md? | v1 link target |
+|------|-------|------------------|----------------|
+| Claude Code | `~/.claude/` exists | Yes | `~/.claude/skills/` |
+| hermes | `~/.hermes/` exists | Yes (assumed) | `~/.hermes/skills/` |
+| openclaw | `~/.openclaw/` exists | Yes (assumed) | `~/.openclaw/skills/` |
+| Codex CLI | `codex` on PATH or `~/.codex/` | Pending | n/a v1 |
+| Cursor | `~/.config/Cursor/` or app dir | No (`.mdc`) | n/a v1 |
+| Gemini CLI | `gemini` on PATH or `~/.gemini/` | Pending | n/a v1 |
+| OpenCode | `~/.config/opencode/` exists | Pending | n/a v1 |
+| Crush | `~/.config/crush/` exists | Pending | n/a v1 |
+| Aider | `aider` on PATH | No | n/a v1 |
+
+Non-native tools listed in `doctor` output, skipped during linking with a "v1 limitation" note. Adapters deferred.
+
+## Source resolution
+
+| Type | Resolution |
+|------|------------|
+| Git repo (multi-skill) | Clone shallow → resolve `<subpath>/<name>/SKILL.md` |
+| Git repo (single skill) | Clone shallow → root is the skill |
+| Direct URL | Fetch → unpack/place |
+| Local path | Symlink-into-pristine; treated as remote-less repo |
+
+All resolution goes through `vercel-labs/skills`; final pinned ref recorded in `skills.lock.json`.
+
+## Update flow
+
+`skills-manager update [<name>...]` per skill:
+
+1. **Save current patch** — regenerate `patches/<name>.patch` from `skills/<name>/` vs. on-disk pristine, capturing uncommitted drift before overwrite.
+2. **Re-resolve source** — fetch latest matching ref into a staging dir (not into `skills/<name>/`).
+3. **Apply patch** with `git apply --3way` against new pristine in staging.
+4. **Clean apply** — atomically swap `skills/<name>/` to staging, replace pristine cache, update `skills.lock.json`.
+5. **Conflict** — leave staging with conflict markers, do not swap, keep live `skills/<name>/` untouched, instruct user to resolve in staging and resume with `update --continue <name>`.
+6. **`--continue`** — re-runs steps 4–5 against the resolved staging tree.
+
+Scope: `update` (all) or `update <skill>...`. `--source <name>` filtering deferred.
+
+## Customization model
+
+Contrib skills are edit-in-place at `~/.skills-manager/skills/<name>/`. `diff` shows drift vs. pristine; `save-patch` regenerates `patches/<name>.patch`. Save-patch runs implicitly at every `update` start.
+
+Self-authored skills (`authored/<name>/`) are not patched — the directory is the source.
+
+## CLI surface
+
+| Command | Status | Effect |
+|---------|--------|--------|
+| `init [--local]` | Wired | Create SSOT root, scaffold manifest+state, detect tools, install bundled agent skill, link into native tools. `--local` → `<cwd>/.skills-manager/`. |
+| `add <source>` | Stub | Install contrib skill from a source. |
+| `list` | Stub | List installed skills with source + ref + customized flag. |
+| `remove <skill>` | Stub | Remove skill, patch, pristine, tool symlinks. |
+| `update [<skill>...]` | Stub | Re-resolve sources and reapply patches. |
+| `update --continue <skill>` | Stub | Resume a paused update after manual conflict resolution. |
+| `diff <skill>` | Stub | Show patch drift between live skill and pristine. |
+| `save-patch <skill>` | Stub | Persist drift to `patches/<skill>.patch`. |
+| `customize <skill>` | Stub | Open skill dir in `$EDITOR`. |
+| `new <name>` | Stub | Scaffold new self-authored skill in `authored/<name>/`. |
+| `tool list` | Stub | Show detected tools and link status. |
+| `tool enable <name>` / `tool disable <name>` | Stub | Opt a detected tool in or out of linking. |
+| `validate [<skill>]` | Stub | Wraps `skills-check`. |
+| `doctor` | Stub | Print SSOT root, detected tools, dependencies, warnings. |
+
+Stubs throw `NotImplemented`; surface is stable and discoverable.
+
+## Bundled agent skill
+
+`src/bundled-skills/skills-manager/SKILL.md`. Copied (not symlinked) into `<root>/authored/skills-manager/` during `init`, then linked into each native-SKILL.md tool dir. Teaches the consuming agent when to invoke the CLI.
+
+## Conventions
+
+- **Node:** ≥ 20.
+- **Package manager:** pnpm.
+- **Language:** TypeScript, strict mode.
+- **Lint/format:** Prettier defaults; ESLint with `@typescript-eslint` (added when needed).
+- **Testing:** `node --test` (built-in runner) for v1, no extra deps.
+- **Commits:** Conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
+- **Distribution:** `npm publish` as `skills-manager`; `npx skills-manager <verb>` or global install.

@@ -1,0 +1,124 @@
+import { runInit } from "./commands/init.js";
+import { runAdd } from "./commands/add.js";
+import { runList } from "./commands/list.js";
+import { runRemove } from "./commands/remove.js";
+import { runUpdate } from "./commands/update.js";
+import { runDiff } from "./commands/diff.js";
+import { runSavePatch } from "./commands/save-patch.js";
+import { runCustomize } from "./commands/customize.js";
+import { runNew } from "./commands/new.js";
+import { runTool } from "./commands/tool.js";
+import { runValidate } from "./commands/validate.js";
+import { runDoctor } from "./commands/doctor.js";
+
+interface ParsedArgs {
+  command: string | undefined;
+  positional: string[];
+  flags: Record<string, string | boolean>;
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
+  const [command, ...rest] = argv;
+  const positional: string[] = [];
+  const flags: Record<string, string | boolean> = {};
+  for (let i = 0; i < rest.length; i++) {
+    const arg = rest[i]!;
+    if (arg.startsWith("--")) {
+      const eq = arg.indexOf("=");
+      if (eq >= 0) {
+        flags[arg.slice(2, eq)] = arg.slice(eq + 1);
+      } else {
+        const next = rest[i + 1];
+        if (next !== undefined && !next.startsWith("--")) {
+          flags[arg.slice(2)] = next;
+          i++;
+        } else {
+          flags[arg.slice(2)] = true;
+        }
+      }
+    } else {
+      positional.push(arg);
+    }
+  }
+  return { command, positional, flags };
+}
+
+const HELP = `skills-manager — manage agentskills.io-format skills across AI agent tools.
+
+Usage: skills-manager <command> [args] [flags]
+
+Commands:
+  init [--local]              Bootstrap the SSOT, detect tools, install the manager skill.
+  add <source>                Install a contrib skill from a git repo, URL, or local path.
+  list                        List installed skills.
+  remove <skill>              Uninstall a skill.
+  update [<skill>...]         Re-resolve sources and reapply patches. With --continue: resume after conflict.
+  diff <skill>                Show drift vs. pristine.
+  save-patch <skill>          Persist current drift to patches/<skill>.patch.
+  customize <skill>           Open the skill dir in $EDITOR.
+  new <name>                  Scaffold a new self-authored skill.
+  tool <list|enable|disable> [name]
+                              Inspect or toggle linkable tools.
+  validate [<skill>]          Validate skill(s) via skills-check.
+  doctor                      Print environment and configuration diagnostics.
+  help                        Show this help.
+
+In v1, only \`init\` is fully implemented. Other commands are stubs.
+
+See AGENTS.md for full documentation.`;
+
+export async function main(rawArgs: string[]): Promise<number> {
+  const { command, positional, flags } = parseArgs(rawArgs);
+
+  if (!command || command === "help" || flags.help === true) {
+    process.stdout.write(HELP + "\n");
+    return command || flags.help ? 0 : 1;
+  }
+
+  try {
+    switch (command) {
+      case "init":
+        return await runInit({ local: flags.local === true });
+      case "add":
+        return await runAdd({ source: positional[0], flags });
+      case "list":
+        return await runList({ flags });
+      case "remove":
+        return await runRemove({ skill: positional[0], flags });
+      case "update":
+        return await runUpdate({
+          skills: positional,
+          cont: flags.continue === true,
+          flags,
+        });
+      case "diff":
+        return await runDiff({ skill: positional[0], flags });
+      case "save-patch":
+        return await runSavePatch({ skill: positional[0], flags });
+      case "customize":
+        return await runCustomize({ skill: positional[0], flags });
+      case "new":
+        return await runNew({ name: positional[0], flags });
+      case "tool":
+        return await runTool({
+          subcommand: positional[0],
+          name: positional[1],
+          flags,
+        });
+      case "validate":
+        return await runValidate({ skill: positional[0], flags });
+      case "doctor":
+        return await runDoctor({ flags });
+      default:
+        process.stderr.write(`Unknown command: ${command}\n\n${HELP}\n`);
+        return 1;
+    }
+  } catch (err) {
+    if (err instanceof Error) {
+      process.stderr.write(`error: ${err.message}\n`);
+    } else {
+      process.stderr.write(`error: ${String(err)}\n`);
+    }
+    return 1;
+  }
+}
