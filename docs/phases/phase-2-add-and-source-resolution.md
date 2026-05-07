@@ -1,8 +1,14 @@
-# Phase 2 — `add <source>` + source resolution
+# Phase 2 — `add <source>` + source resolution + adoption planner
 
 ## Mission
 
-Replace the throwing stub at `src/core/skills-cli.ts` with a real `resolveSource()` that handles the three source types in the spec, then implement `runAdd()` end-to-end so a user can install a contrib skill into the SSOT and have it linked into every native-`SKILL.md` tool.
+Three pieces, landed together in this order:
+
+1. **Adoption planner refactor** — extract the winner/loser/split decision logic from `runAdopt` into a pure module (`src/core/adoption.ts`) with planner / executor / formatter functions. Crystallizes the plan/execute/format pattern that future commands with branching decisions (`update` in Phase 4, `remove` in Phase 5) will reuse. No user-visible change.
+2. **Source resolution** — replace the throwing stub at `src/core/skills-cli.ts` with a real `resolveSource()` that handles the three source types in the spec.
+3. **`add <source>`** — implement `runAdd()` end-to-end so a user can install a contrib skill into the SSOT and have it linked into every native-`SKILL.md` tool.
+
+The adoption refactor lands first to establish the pattern. `runAdd` itself is implemented imperatively — its logic is linear (resolve → reject duplicate → copy → manifest → link → print) with no plan-shaped branching. Don't force the planner pattern where it doesn't fit; revisit only if a future feature pushes `add` into plan-shaped territory.
 
 This is the first user-visible verb beyond `init` / `adopt`. After this phase, `add` followed by `list` (Phase 5) gives a complete install flow even before `update` lands.
 
@@ -10,13 +16,13 @@ This is the first user-visible verb beyond `init` / `adopt`. After this phase, `
 
 Read in order:
 
-1. [AGENTS.md](../../AGENTS.md) — full re-read. Pay particular attention to **Source resolution**, **Directory layout**, and **Tool detection**. The CLI surface table tells you what `add` is supposed to do at the user level.
-2. [README.md](../../README.md) — section "Sources" describes the three accepted inputs from a user POV.
-3. [src/core/paths.ts](../../src/core/paths.ts), [src/core/manifest.ts](../../src/core/manifest.ts), [src/core/state.ts](../../src/core/state.ts), [src/core/tool-detect.ts](../../src/core/tool-detect.ts) — primitives you'll compose.
-4. [src/commands/init.ts](../../src/commands/init.ts) — read in full. It already does *most* of what `add` needs: place a skill directory at the SSOT and symlink it into native-`SKILL.md` tool dirs. Reuse, don't duplicate.
-5. [src/commands/adopt.ts](../../src/commands/adopt.ts) — copy its style for argument parsing, error messages, and stdout chattiness.
+1. [AGENTS.md](../../AGENTS.md) — full re-read. **Source resolution**, **Directory layout**, **Tool detection**, **Adoption**.
+2. [docs/adr/0001-ssot-and-symlinks.md](../adr/0001-ssot-and-symlinks.md), [docs/adr/0004-wrap-vercel-labs-skills.md](../adr/0004-wrap-vercel-labs-skills.md), [docs/adr/0008-adopt-as-authored-only.md](../adr/0008-adopt-as-authored-only.md) — load-bearing decisions for both halves of this phase.
+3. [README.md](../../README.md) — section "Sources" describes the three accepted inputs from a user POV.
+4. [src/core/paths.ts](../../src/core/paths.ts), [src/core/manifest.ts](../../src/core/manifest.ts), [src/core/state.ts](../../src/core/state.ts), [src/core/tool-detect.ts](../../src/core/tool-detect.ts), [src/core/linker.ts](../../src/core/linker.ts), [src/core/adopt-scan.ts](../../src/core/adopt-scan.ts) — primitives you'll compose.
+5. [src/commands/init.ts](../../src/commands/init.ts), [src/commands/adopt.ts](../../src/commands/adopt.ts) — read both in full. `init` shows the place-skill-and-symlink pattern; `adopt` is the file you'll refactor.
 6. [src/core/skills-cli.ts](../../src/core/skills-cli.ts) — the file you're rewriting.
-7. [tests/init.test.js](../../tests/init.test.js) — the test pattern to follow.
+7. [tests/init.test.js](../../tests/init.test.js), [tests/adopt.test.js](../../tests/adopt.test.js) — test patterns. The `adopt.test.js` integration suite must continue to pass unchanged after the refactor — it is the safety net.
 
 Conventions: see `phase-1-patch-helpers.md` "Project orientation" — same rules.
 
@@ -24,7 +30,110 @@ Conventions: see `phase-1-patch-helpers.md` "Project orientation" — same rules
 
 ## Deliverables
 
-### 1. Rewrite `src/core/skills-cli.ts`
+Sequence matters: build the adoption planner (and refactor `adopt`) first so the pattern is in place and the existing integration tests confirm the refactor is faithful before any new code lands. Then source resolution. Then `runAdd`.
+
+### 1. Adoption planner: new module `src/core/adoption.ts`
+
+Extract the winner/loser/split decision logic from `runAdopt` ([src/commands/adopt.ts:154-353](../../src/commands/adopt.ts#L154-L353)) into a pure module with three responsibilities: plan, execute, format. The plan is a uniform `AdoptPlan` value with a `mode` tag for the formatter; execution is a single pass over the action arrays.
+
+Exports — exactly these, no others:
+
+```ts
+import type { AdoptCandidate } from "./adopt-scan.js";
+import type { LinkSiteResult } from "./linker.js";
+
+export interface AdoptPlanInput {
+  candidate: AdoptCandidate;
+  flags: { from?: string; keepOtherAs?: string };  // pre-parsed by the CLI layer
+  rootPath: string;
+}
+
+export type AdoptMode =
+  | "single"
+  | "duplicate-identical"
+  | "conflict-takeover"
+  | "conflict-split";
+
+export interface AdoptPlan {
+  mode: AdoptMode;
+  name: string;
+  primary: { sourcePath: string; targetDir: string; toolId: string };
+  split?: { sourcePath: string; targetDir: string; targetName: string; toolId: string };
+  removals: { path: string; toolId: string; backupTo?: string }[];   // backupTo set ⇒ backup-then-remove
+  links: { linkPath: string; targetDir: string; toolId: string }[];
+  manifestEntries: { name: string; kind: "authored" }[];
+}
+
+export interface AdoptPlanError { message: string }
+
+export type PlanResult =
+  | { ok: true; plan: AdoptPlan }
+  | { ok: false; error: AdoptPlanError };
+
+export function planAdoption(input: AdoptPlanInput): PlanResult;
+
+export interface AdoptExecResult {
+  performed: { kind: "rename" | "backup" | "remove" | "link" | "manifest-write"; detail: string }[];
+  linkResults: LinkSiteResult[];
+}
+
+export function executeAdoptPlan(
+  plan: AdoptPlan,
+  opts?: { dryRun?: boolean; nowIso?: string },
+): AdoptExecResult;
+
+export function formatAdoptPlan(plan: AdoptPlan): string[];
+export function formatAdoptResult(
+  plan: AdoptPlan,
+  result: AdoptExecResult,
+  opts?: { dryRun?: boolean },
+): string[];
+```
+
+Required behavior:
+
+**`planAdoption`** — pure with one allowed read (`existsSync` for precondition checks). No `process.stdout`, no writes, no throws. Every error returns `{ ok: false, error }`.
+
+- `candidate.status.kind === "single"` → `mode: "single"`. Primary is the only location. No removals. Links = [primary site only]. Manifest = [primary].
+- `candidate.status.kind === "duplicate-identical"` → `mode: "duplicate-identical"`. Primary = `locations[0]`. Removals = `locations[1..]` with no `backupTo` (identical content, safe to drop). Links = every location's path → primary target. Manifest = [primary].
+- `candidate.status.kind === "duplicate-conflict"` and `flags.from` set, no `keepOtherAs` → `mode: "conflict-takeover"`. Primary = `locations.find(l => l.toolId === flags.from)`. Removals = other locations with `backupTo` set to a timestamped path under `<rootPath>/.cache/adopted-backup/<ts>/<toolId>/<name>/`. Links = all locations → primary target. Manifest = [primary].
+- `candidate.status.kind === "duplicate-conflict"` and both `flags.from` and `flags.keepOtherAs` set → `mode: "conflict-split"`. Primary = matching `from`. Split = the other location, with its own `targetDir` (`<rootPath>/authored/<keepOtherAs>/`) and `targetName`. Removals = []. Links = [primary site → primary target, split site → split target]. Manifest = [primary, split].
+- Validation errors (all `{ ok: false }`):
+  - `keepOtherAs` set without `from` → "`--keep-other-as` also requires `--from <tool>` to pick the primary copy."
+  - `from` value not in `candidate.locations[].toolId` → "`--from \"<value>\"` not in candidate locations [<list>]."
+  - `duplicate-conflict` without `from` → "<name> has differing copies in [<list>]. Pick one with `--from <tool>`, or split with `--from <tool> --keep-other-as <new-name>`."
+  - `<rootPath>/authored/<name>/` already exists → "`<targetDir>` already exists; refusing to overwrite. Move it aside and retry."
+  - `<rootPath>/authored/<keepOtherAs>/` already exists → "`<otherDir>` already exists; pick a different `--keep-other-as` name."
+- Backup paths share one timestamp per plan; `executeAdoptPlan` receives it via `opts.nowIso` (default `new Date().toISOString()` at execute time), so all backups for one plan land under the same `<ts>/` directory.
+
+**`executeAdoptPlan`** — performs side effects in this order, returns `AdoptExecResult` describing what happened:
+
+1. Rename `plan.primary.sourcePath` → `plan.primary.targetDir`.
+2. If `plan.split`: rename `split.sourcePath` → `split.targetDir`.
+3. For each removal with `backupTo`: `cp -r path backupTo`, then `rm -rf path`.
+4. For each removal without `backupTo`: `rm -rf path`.
+5. For each link: pre-remove a real directory at `linkPath` (the same defensive `rmSync` `adopt` does today; the linker refuses real dirs by design — see ADR-0001), then call `linkSiteToSkill(linkPath, targetDir, toolId)`. Collect results into `linkResults`.
+6. Write manifest entries via `readManifest`/`writeManifest` from `src/core/manifest.ts`.
+
+When `opts.dryRun === true`: skip every side effect (no rename, no rm, no mkdir, no manifest write, no link calls). `performed[]` still describes what *would* happen so callers can preview; `linkResults` is empty in this mode. Trace every branch — dry-run must not touch the filesystem.
+
+Filesystem failures (cross-device rename, permission denied) propagate as exceptions. The executor isn't responsible for transactional rollback; the caller (today: `runAdopt`) decides.
+
+**`formatAdoptPlan` / `formatAdoptResult`** — pure: no I/O, return `string[]`. Match the user-visible output of today's `adoptOne` so the existing `tests/adopt.test.js` integration tests continue passing without assertion changes. `formatAdoptResult` appends `(dry-run — no changes made)` when `opts.dryRun` is true.
+
+### 2. Refactor `src/commands/adopt.ts`
+
+Replace the inline planning logic with calls to the new module. Target structure:
+
+- `runAdopt`: parse flags, run scan, dispatch to `printScan` / `adoptAll` / `adoptOne`. Unchanged at this level.
+- `adoptOne(candidate, rootPath, opts)`: `planAdoption(...)` → if `!ok`, print `error.message` to stderr and return 1 → print `formatAdoptPlan(plan)` lines → if dry-run, print result formatter and return 0 → `executeAdoptPlan(plan)` → print `formatAdoptResult(plan, result)` lines → return 0.
+- `adoptAll(scan, rootPath, opts)`: build plans for every safe candidate up front via `planAdoption`. Print all plans (combined preview). If dry-run, stop and return 0. Otherwise execute each in order, collecting results, then print combined results. Conflict candidates remain listed at the end as skipped. **Note:** this changes `adopt --all`'s user-visible output from today's per-candidate interleaved format to a combined-preview-then-combined-results format. Intentional — the new shape makes `--all --dry-run` actually previewable. The existing `tests/adopt.test.js` `--all` case asserts only on filesystem state, so it passes unchanged.
+
+What to remove: every `let winner` / `let losers`, the `linkPlan`/`splitPlan` build-up (lines 215–261), all `process.stdout.write` calls inside `adoptOne`'s side-effect block (lines 263–351), the local `isRealDirectory` / `reportLink` helpers (those move into the executor / formatter as appropriate). `printScan` stays as-is; it predates the planner pattern and isn't plan-shaped.
+
+Existing `tests/adopt.test.js` integration tests must pass without modification. They are the safety net — if they fail, the refactor is wrong.
+
+### 3. Rewrite `src/core/skills-cli.ts`
 
 Drop the `SkillsCliUnavailableError`. Implement `resolveSource()` for the three source types from [AGENTS.md](../../AGENTS.md) "Source resolution":
 
@@ -65,7 +174,7 @@ Use `node:child_process` (`execFile`, never raw `exec` with shell=true) for git,
 
 Network-dependent behavior is hard to test. Structure `resolveSource` so the local-path branch is fully exercisable from the test suite without network.
 
-### 2. Implement `runAdd()` in `src/commands/add.ts`
+### 4. Implement `runAdd()` in `src/commands/add.ts`
 
 Replace the stub. The flow:
 
@@ -81,7 +190,29 @@ Replace the stub. The flow:
 
 Idempotency: If the operation fails midway, leave a coherent state. The simplest approach: do step 6 (copy to skills/) after the pristine cache is fully populated, do steps 7–8 atomically (write manifest *after* successful symlinking), and on any thrown error inside steps 6–8, attempt cleanup of partial copies in `skills/<name>/` before re-throwing. Do not attempt to roll back the pristine cache — it's content-addressed, harmless if stale.
 
-### 3. New tests: `tests/add.test.js`
+### 5. New tests
+
+Two new test files, plus the existing `tests/adopt.test.js` continuing to pass unchanged.
+
+#### `tests/adoption.test.js` (planner unit tests)
+
+Pattern: `node:test`, `node:assert/strict`. Imports from `../dist/core/adoption.js`. Planner cases build `AdoptCandidate` / `AdoptLocation` fixtures inline — no fake `$HOME` needed. Executor cases use `mkdtempSync` for a tmp root with a real tool-dir layout.
+
+Cover at least:
+
+1. **`planAdoption` — single location.** One location. Assert `mode: "single"`, primary set, removals empty, one link entry, one manifest entry.
+2. **`planAdoption` — duplicate-identical.** Two locations, identical hash. Assert `mode: "duplicate-identical"`, primary = first, removals = rest with `backupTo` undefined, links cover both sites pointing at primary target, manifest has primary only.
+3. **`planAdoption` — conflict-takeover with `--from`.** Two conflicting locations, `flags.from` matches one. Assert `mode: "conflict-takeover"`, removals[0].`backupTo` set under `.cache/adopted-backup/<ts>/`, links cover both sites.
+4. **`planAdoption` — conflict-split with `--from` + `--keep-other-as`.** Same as 3 plus `keepOtherAs`. Assert `mode: "conflict-split"`, primary + split present, removals empty, two manifest entries.
+5. **`planAdoption` — conflict without `--from`.** `{ ok: false }` with a message naming the available tool ids.
+6. **`planAdoption` — `--keep-other-as` without `--from`.** `{ ok: false }`, specific message.
+7. **`planAdoption` — `--from` value not in candidate locations.** `{ ok: false }` listing available tool ids.
+8. **`planAdoption` — target dir already exists.** Pre-create `authored/<name>/`. `{ ok: false }`.
+9. **`planAdoption` — split target dir already exists.** Pre-create `authored/<keepOtherAs>/`. `{ ok: false }`.
+10. **`executeAdoptPlan` — dry-run.** Real fixture (tool dirs, skill content). Plan, then `executeAdoptPlan(plan, { dryRun: true })`. Assert `performed[]` describes the moves; on-disk state unchanged (no rename, no rm, no manifest write).
+11. **`executeAdoptPlan` — real run.** Same fixture, `dryRun: false`. Assert manifest entries present, every `linkResults.status` is `"linked"`, files in expected locations.
+
+#### `tests/add.test.js` (integration)
 
 Pattern: `node:test`, `node:assert/strict`, fake HOME via `mkdtempSync`, run `runInit` first then `runAdd`. Tests import from `../dist/...`.
 
@@ -99,12 +230,15 @@ Skip git and direct-URL tests in this phase to avoid network. Note in a comment 
 
 Spend real time on this:
 
-1. **Cleanup on partial failure.** If `runAdd` throws after copying to `skills/<name>/` but before writing the manifest, what's left on disk? Trace it.
-2. **Symlink target stability.** If the user later moves the SSOT, all symlinks break. That's expected; not yours to solve. But confirm the symlink target is the *absolute* SSOT path, not a relative path from a tool dir.
-3. **Linker reuse.** Confirm `add` calls `linkSkillIntoTools` from `src/core/linker.ts`. If you re-rolled symlink logic locally, delete it.
-4. **Frontmatter parser.** Does it handle CRLF line endings? Tab-prefixed values? Quoted values (`name: "foo"`)? Test at least one of these or accept a constrained subset and document it.
-5. **Path-injection safety.** Source strings come from the user. Make sure `safeRefSegment` strips `..`, `/`, and shell metacharacters before they hit a filesystem path. Confirm by passing a hostile fixture name.
-6. **No hidden network calls in the local-path test.** Run it in `--network-disabled` mode if your harness supports it; otherwise read the test code with hostile eyes.
+1. **Planner purity.** `planAdoption` must not touch `process.stdout`, `fs.writeFileSync`, or anything that mutates state. The only filesystem read allowed is `existsSync` for the "target dir not already there" precondition. If you find yourself reaching for anything else, push it into the executor.
+2. **Dry-run is filesystem-clean.** `executeAdoptPlan(plan, { dryRun: true })` must not call `renameSync`, `rmSync`, `mkdirSync`, `cpSync`, `writeManifest`, or the linker. Trace every branch.
+3. **Adopt output parity.** Run `tests/adopt.test.js` after the refactor. It must pass without assertion changes. If user-visible output strings drifted, either restore them or document why the change is acceptable and update the tests deliberately.
+4. **Cleanup on partial failure.** If `runAdd` throws after copying to `skills/<name>/` but before writing the manifest, what's left on disk? Trace it.
+5. **Symlink target stability.** If the user later moves the SSOT, all symlinks break. That's expected; not yours to solve. But confirm the symlink target is the *absolute* SSOT path, not a relative path from a tool dir.
+6. **Linker reuse.** Confirm `add` calls `linkSkillIntoTools` from `src/core/linker.ts`, and the adoption executor calls `linkSiteToSkill`. No file should re-roll symlink logic.
+7. **Frontmatter parser.** Does it handle CRLF line endings? Tab-prefixed values? Quoted values (`name: "foo"`)? Test at least one of these or accept a constrained subset and document it.
+8. **Path-injection safety.** Source strings come from the user. Make sure `safeRefSegment` strips `..`, `/`, and shell metacharacters before they hit a filesystem path. Confirm by passing a hostile fixture name.
+9. **No hidden network calls in the local-path test.** Run it in `--network-disabled` mode if your harness supports it; otherwise read the test code with hostile eyes.
 
 ## Verification
 
@@ -130,11 +264,16 @@ HOME=$(mktemp -d) node bin/skills-manager.js add /tmp/fake-skill   # adapt to on
 ## What's out of scope
 
 - `update`, `diff`, `save-patch`, `remove`, `list`. Future phases.
+- Forcing `runAdd` into the planner pattern. `add` is linear; revisit only if a future feature pushes it into plan-shaped territory.
 - Editing `ROADMAP.md` checkboxes — the user does that.
 - Adding npm dependencies.
 
 ## Done criteria
 
+- `src/core/adoption.ts` exists with the listed exports; planner is pure, executor is dry-run safe.
+- `src/commands/adopt.ts` no longer contains inline winner/loser/split logic — it composes planner + executor + formatter.
+- `tests/adoption.test.js` covers the eleven listed cases and passes.
+- `tests/adopt.test.js` continues to pass without modification.
 - `src/core/skills-cli.ts` rewritten, `SkillsCliUnavailableError` removed.
 - `src/commands/add.ts` no longer throws `NotImplementedError`.
 - `add` calls `linkSkillIntoTools` from `src/core/linker.ts`; no inline symlink logic.

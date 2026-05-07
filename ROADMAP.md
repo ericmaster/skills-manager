@@ -12,8 +12,8 @@ The headline differentiator (**survivable customizations of contrib skills acros
   Pure helpers in `src/core/patch.ts`: `diffSkill`, `savePatch`, `applyPatch3Way`. No command wiring. Tests in `tests/patch.test.js`.
 - [x] **Phase 1.5 — Linker seam.** [docs/phases/phase-1.5-linker-seam.md](docs/phases/phase-1.5-linker-seam.md)
   Extract symlink placement (and removal) into `src/core/linker.ts`. Refactor `init` and `adopt` to use it; ship the `unlink` half too so Phase 5 inherits a coherent seam. Pure refactor — no user-visible behavior change. Tests in `tests/linker.test.js`.
-- [ ] **Phase 2 — `add <source>` + source resolution.** [docs/phases/phase-2-add-and-source-resolution.md](docs/phases/phase-2-add-and-source-resolution.md)
-  Replace the stub in `src/core/skills-cli.ts` with a real `resolveSource()`. Implement `runAdd()` end-to-end: resolve → mirror to pristine cache → copy to `skills/<name>/` → write `skills.json` + `skills.lock.json` → link into native tools. Tests in `tests/add.test.js`.
+- [ ] **Phase 2 — `add <source>` + source resolution + adoption planner.** [docs/phases/phase-2-add-and-source-resolution.md](docs/phases/phase-2-add-and-source-resolution.md)
+  Three pieces. (1) Extract winner/loser/split logic from `runAdopt` into a pure `src/core/adoption.ts` (planner / executor / formatter); refactor `runAdopt` to use it. (2) Replace the stub in `src/core/skills-cli.ts` with a real `resolveSource()`. (3) Implement `runAdd()` end-to-end. Tests in `tests/adoption.test.js` and `tests/add.test.js`; `tests/adopt.test.js` passes unchanged.
 - [ ] **Phase 3 — `diff <skill>` + `save-patch <skill>`.** [docs/phases/phase-3-diff-and-save-patch.md](docs/phases/phase-3-diff-and-save-patch.md)
   Wire both commands to the helpers from Phase 1. Tests in `tests/diff-save-patch.test.js`.
 - [ ] **Phase 4 — `update` clean + conflict + `--continue`.** [docs/phases/phase-4-update.md](docs/phases/phase-4-update.md)
