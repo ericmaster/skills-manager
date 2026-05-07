@@ -5,7 +5,6 @@ import {
   mkdirSync,
   renameSync,
   rmSync,
-  symlinkSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { ensureRootLayout, resolveRoot } from "../core/paths.js";
@@ -22,6 +21,7 @@ import {
   type AdoptLocation,
   type AdoptScanResult,
 } from "../core/adopt-scan.js";
+import { linkSiteToSkill, type LinkSiteResult } from "../core/linker.js";
 
 export interface AdoptArgs {
   /** Skill name to adopt; optional. */
@@ -324,24 +324,21 @@ async function adoptOne(
   // 4. Symlink primary into all link sites.
   for (const site of linkPlan) {
     const linkPath = site.path;
-    if (existsSync(linkPath) || lstatSafeIsSymlink(linkPath)) {
+    if (isRealDirectory(linkPath)) {
       rmSync(linkPath, { recursive: true, force: true });
     }
-    mkdirSync(dirname(linkPath), { recursive: true });
-    symlinkSync(targetDir, linkPath, "dir");
-    process.stdout.write(`  ✓ linked ${site.toolId} → ${linkPath}\n`);
+    const result = linkSiteToSkill(linkPath, targetDir, site.toolId);
+    reportLink(result);
   }
 
   // 5. Symlink split skill into its single source tool.
   if (splitPlan) {
     const linkPath = splitPlan.sourcePath;
-    if (existsSync(linkPath) || lstatSafeIsSymlink(linkPath)) {
+    if (isRealDirectory(linkPath)) {
       rmSync(linkPath, { recursive: true, force: true });
     }
-    symlinkSync(splitPlan.targetDir, linkPath, "dir");
-    process.stdout.write(
-      `  ✓ linked ${splitPlan.toolId} → ${linkPath} (as ${splitPlan.targetName})\n`,
-    );
+    const result = linkSiteToSkill(linkPath, splitPlan.targetDir, splitPlan.toolId);
+    reportLink(result, ` (as ${splitPlan.targetName})`);
   }
 
   // 6. Update manifest.
@@ -356,11 +353,35 @@ async function adoptOne(
   return 0;
 }
 
-function lstatSafeIsSymlink(p: string): boolean {
+function isRealDirectory(p: string): boolean {
   try {
-    return lstatSync(p).isSymbolicLink();
+    const stat = lstatSync(p);
+    return !stat.isSymbolicLink() && stat.isDirectory();
   } catch {
     return false;
+  }
+}
+
+function reportLink(result: LinkSiteResult, suffix = ""): void {
+  switch (result.status) {
+    case "linked":
+    case "already-linked":
+      process.stdout.write(
+        `  ✓ linked ${result.toolId} → ${result.linkPath}${suffix}\n`,
+      );
+      return;
+    case "skipped-non-symlink":
+    case "skipped-foreign-target":
+      process.stdout.write(
+        `  ✗ link skipped at ${result.linkPath}: ${result.message ?? result.status}\n`,
+      );
+      return;
+    case "failed":
+    default:
+      process.stdout.write(
+        `  ✗ link failed at ${result.linkPath}: ${result.message ?? result.status}\n`,
+      );
+      return;
   }
 }
 

@@ -1,13 +1,5 @@
-import {
-  cpSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readlinkSync,
-  symlinkSync,
-  unlinkSync,
-} from "node:fs";
-import { dirname, join } from "node:path";
+import { cpSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import {
   ensureRootLayout,
   getBundledSkillsDir,
@@ -28,6 +20,7 @@ import {
   type State,
 } from "../core/state.js";
 import { detectTools, TOOL_REGISTRY } from "../core/tool-detect.js";
+import { linkSkillIntoTools } from "../core/linker.js";
 
 const BUNDLED_MANAGER_SKILL = "skills-manager";
 
@@ -72,6 +65,7 @@ export async function runInit(args: { local: boolean }): Promise<number> {
   const toolRecords: DetectedToolRecord[] = [];
   const linkSummaries: string[] = [];
   const skipSummaries: string[] = [];
+  const linkableTools: typeof detected = [];
 
   for (const entry of TOOL_REGISTRY) {
     const found = detected.find((d) => d.id === entry.id);
@@ -92,15 +86,31 @@ export async function runInit(args: { local: boolean }): Promise<number> {
       );
       continue;
     }
+    linkableTools.push(found);
+  }
 
-    const linkPath = join(found.absLinkTarget!, BUNDLED_MANAGER_SKILL);
-    try {
-      mkdirSync(dirname(linkPath), { recursive: true });
-      replaceSymlink(linkPath, targetSkillDir);
-      linkSummaries.push(`  ✓ ${entry.id.padEnd(12)} → ${linkPath}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      linkSummaries.push(`  ✗ ${entry.id.padEnd(12)} link failed: ${msg}`);
+  const linkResults = linkSkillIntoTools(
+    BUNDLED_MANAGER_SKILL,
+    targetSkillDir,
+    linkableTools,
+  );
+  for (const r of linkResults) {
+    switch (r.status) {
+      case "linked":
+      case "already-linked":
+        linkSummaries.push(`  ✓ ${r.toolId.padEnd(12)} → ${r.linkPath}`);
+        break;
+      case "skipped-non-symlink":
+        linkSummaries.push(
+          `  ✗ ${r.toolId.padEnd(12)} link skipped: ${r.message ?? "non-symlink at link path"}`,
+        );
+        break;
+      case "failed":
+      default:
+        linkSummaries.push(
+          `  ✗ ${r.toolId.padEnd(12)} link failed: ${r.message ?? r.status}`,
+        );
+        break;
     }
   }
 
@@ -128,29 +138,4 @@ export async function runInit(args: { local: boolean }): Promise<number> {
     `\nDone. Run \`skills-manager doctor\` to inspect setup.\n`,
   );
   return 0;
-}
-
-function replaceSymlink(linkPath: string, target: string): void {
-  if (existsSync(linkPath) || isDanglingSymlink(linkPath)) {
-    const stat = lstatSync(linkPath);
-    if (stat.isSymbolicLink()) {
-      const current = readlinkSync(linkPath);
-      if (current === target) return;
-      unlinkSync(linkPath);
-    } else {
-      throw new Error(
-        `Refusing to overwrite non-symlink at ${linkPath}. Move or remove it manually.`,
-      );
-    }
-  }
-  symlinkSync(target, linkPath, "dir");
-}
-
-function isDanglingSymlink(p: string): boolean {
-  try {
-    lstatSync(p);
-    return true;
-  } catch {
-    return false;
-  }
 }

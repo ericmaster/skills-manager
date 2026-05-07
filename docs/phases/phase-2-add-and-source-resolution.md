@@ -20,7 +20,7 @@ Read in order:
 
 Conventions: see `phase-1-patch-helpers.md` "Project orientation" — same rules.
 
-**Confirm Phase 1 is merged before starting.** This phase doesn't import from `src/core/patch.ts` directly, but the next phases assume Phase 1 exists; don't get ahead of the order.
+**Confirm Phase 1 and Phase 1.5 are merged before starting.** This phase imports `linkSkillIntoTools` from `src/core/linker.ts` (Phase 1.5). It doesn't use `src/core/patch.ts` directly, but the next phases assume Phase 1 exists; don't get ahead of the order.
 
 ## Deliverables
 
@@ -76,8 +76,8 @@ Replace the stub. The flow:
 5. Reject if `skillName` already exists in `manifest.skills` (suggest `remove` then `add`, or `update`).
 6. Copy the pristine tree to `<root>/skills/<skillName>/` (a fresh, real directory — not a symlink).
 7. Update manifest: `manifest.skills[skillName] = { kind: "contrib", source }`. Update lockfile: `lock.skills[skillName] = { resolvedRef: ref, resolvedAt: new Date().toISOString() }`.
-8. Read `state.json` and link `<root>/skills/<skillName>/` into every linkable native-`SKILL.md` tool's link target — same logic `init` uses for the bundled skill, just for an arbitrary skill name. **Reuse, don't duplicate.** If `init` does this inline, refactor a small helper into `src/core/linker.ts` (or wherever feels least invasive) and call it from both. Pure refactor, no behavior change.
-9. Print a summary: `added <name> @ <short-ref> (<source-summary>)` and a list of tools it was linked into.
+8. Detect linkable tools (`listLinkableTools()` from `src/core/tool-detect.ts`) and call `linkSkillIntoTools(skillName, <root>/skills/<skillName>, tools)` from `src/core/linker.ts` (Phase 1.5). Don't reimplement symlink placement.
+9. Print a summary: `added <name> @ <short-ref> (<source-summary>)` and a list of tools it was linked into (formatted from the returned `LinkSiteResult[]`).
 
 Idempotency: If the operation fails midway, leave a coherent state. The simplest approach: do step 6 (copy to skills/) after the pristine cache is fully populated, do steps 7–8 atomically (write manifest *after* successful symlinking), and on any thrown error inside steps 6–8, attempt cleanup of partial copies in `skills/<name>/` before re-throwing. Do not attempt to roll back the pristine cache — it's content-addressed, harmless if stale.
 
@@ -101,7 +101,7 @@ Spend real time on this:
 
 1. **Cleanup on partial failure.** If `runAdd` throws after copying to `skills/<name>/` but before writing the manifest, what's left on disk? Trace it.
 2. **Symlink target stability.** If the user later moves the SSOT, all symlinks break. That's expected; not yours to solve. But confirm the symlink target is the *absolute* SSOT path, not a relative path from a tool dir.
-3. **Refactor honesty.** If you extracted a `linkSkillIntoTools` helper, does `init.ts` actually call it now, or did you leave a duplicate? Don't ship duplication.
+3. **Linker reuse.** Confirm `add` calls `linkSkillIntoTools` from `src/core/linker.ts`. If you re-rolled symlink logic locally, delete it.
 4. **Frontmatter parser.** Does it handle CRLF line endings? Tab-prefixed values? Quoted values (`name: "foo"`)? Test at least one of these or accept a constrained subset and document it.
 5. **Path-injection safety.** Source strings come from the user. Make sure `safeRefSegment` strips `..`, `/`, and shell metacharacters before they hit a filesystem path. Confirm by passing a hostile fixture name.
 6. **No hidden network calls in the local-path test.** Run it in `--network-disabled` mode if your harness supports it; otherwise read the test code with hostile eyes.
@@ -137,7 +137,7 @@ HOME=$(mktemp -d) node bin/skills-manager.js add /tmp/fake-skill   # adapt to on
 
 - `src/core/skills-cli.ts` rewritten, `SkillsCliUnavailableError` removed.
 - `src/commands/add.ts` no longer throws `NotImplementedError`.
-- Linker helper extracted if applicable; `init.ts` uses it.
+- `add` calls `linkSkillIntoTools` from `src/core/linker.ts`; no inline symlink logic.
 - `tests/add.test.js` covers the five listed cases and passes.
 - `pnpm build` and `pnpm test` green.
 - Self-review pass completed.

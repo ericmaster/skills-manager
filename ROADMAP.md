@@ -10,6 +10,8 @@ The headline differentiator (**survivable customizations of contrib skills acros
 
 - [x] **Phase 1 — Patch helpers foundation.** [docs/phases/phase-1-patch-helpers.md](docs/phases/phase-1-patch-helpers.md)
   Pure helpers in `src/core/patch.ts`: `diffSkill`, `savePatch`, `applyPatch3Way`. No command wiring. Tests in `tests/patch.test.js`.
+- [x] **Phase 1.5 — Linker seam.** [docs/phases/phase-1.5-linker-seam.md](docs/phases/phase-1.5-linker-seam.md)
+  Extract symlink placement (and removal) into `src/core/linker.ts`. Refactor `init` and `adopt` to use it; ship the `unlink` half too so Phase 5 inherits a coherent seam. Pure refactor — no user-visible behavior change. Tests in `tests/linker.test.js`.
 - [ ] **Phase 2 — `add <source>` + source resolution.** [docs/phases/phase-2-add-and-source-resolution.md](docs/phases/phase-2-add-and-source-resolution.md)
   Replace the stub in `src/core/skills-cli.ts` with a real `resolveSource()`. Implement `runAdd()` end-to-end: resolve → mirror to pristine cache → copy to `skills/<name>/` → write `skills.json` + `skills.lock.json` → link into native tools. Tests in `tests/add.test.js`.
 - [ ] **Phase 3 — `diff <skill>` + `save-patch <skill>`.** [docs/phases/phase-3-diff-and-save-patch.md](docs/phases/phase-3-diff-and-save-patch.md)

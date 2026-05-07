@@ -16,6 +16,7 @@
 | **SSOT** | `~/.skills-manager/` (user) or `<workspace>/.skills-manager/` (workspace). The only place skill files live; tool dirs hold symlinks. |
 | **Scope** | *user-global* (default) or *workspace-local*. Fully isolated — no inheritance. |
 | **Tool** | AI agent CLI/IDE that consumes skills. Detected by filesystem probes. |
+| **Link site** | Path under a Tool's link target where a Skill is exposed via symlink to its SSOT location (e.g. `~/.claude/skills/<name>`). Created and removed only by the linker (`src/core/linker.ts`). |
 
 ## Directory layout
 
@@ -148,6 +149,10 @@ Stubs throw `NotImplemented`; surface is stable and discoverable.
 ## Roadmap
 
 Phased plan, plus the explicit list of features considered and deferred, lives in [ROADMAP.md](ROADMAP.md). Check it before proposing a new direction.
+
+## Architecture decisions
+
+Load-bearing decisions are recorded as ADRs in [docs/adr/](docs/adr/). Read the relevant ones before proposing architectural changes — many directions look attractive in isolation but were considered and deliberately closed off there.
 
 ## Conventions
 
