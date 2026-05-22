@@ -1,12 +1,14 @@
 import { resolveRoot } from "../core/paths.js";
 import { detectTools, TOOL_REGISTRY } from "../core/tool-detect.js";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 export async function runDoctor(_args: {
   flags: Record<string, string | boolean>;
 }): Promise<number> {
   const root = resolveRoot();
-  const detected = await detectTools();
+  const home = root.scope === "workspace" ? join(root.path, "..") : undefined;
+  const detected = await detectTools(home);
 
   const lines: string[] = [];
   lines.push(`SSOT root:    ${root.path}`);

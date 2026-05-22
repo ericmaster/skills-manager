@@ -42,7 +42,8 @@ export async function runAdopt(args: AdoptArgs): Promise<number> {
       ? (args.flags["keep-other-as"] as string)
       : undefined;
 
-  const scan = await scanForAdoption({ rootPath: root.path });
+  const home = root.scope === "workspace" ? join(root.path, "..") : undefined;
+  const scan = await scanForAdoption({ rootPath: root.path, home });
 
   if (!args.name && !all) {
     return printScan(scan);

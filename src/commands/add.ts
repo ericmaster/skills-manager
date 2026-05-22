@@ -51,7 +51,8 @@ export async function runAdd(args: {
     store.recordContribSkill(skillName, source);
     store.pinResolvedRef(skillName, ref);
 
-    const tools = await listLinkableTools();
+    const home = root.scope === "workspace" ? join(root.path, "..") : undefined;
+    const tools = await listLinkableTools(home);
     const linkResults = linkSkillIntoTools(skillName, liveDir, tools);
 
     // Manifest writes go last — only commit when symlinking has run.

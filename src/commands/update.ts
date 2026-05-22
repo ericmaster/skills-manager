@@ -379,10 +379,9 @@ async function swap(
   store.pinResolvedRef(name, newRef);
   store.commit();
 
-  // 5. Refresh tool symlinks. The renameSync chain leaves the dir at liveDir,
-  // so existing symlinks pointing at liveDir remain valid. Re-link defensively
-  // in case any went stale.
-  const tools = await listLinkableTools();
+  const root = resolveRoot({ cwd: join(rootPath, "..") });
+  const home = root.scope === "workspace" ? join(rootPath, "..") : undefined;
+  const tools = await listLinkableTools(home);
   linkSkillIntoTools(name, liveDir, tools);
 }
 

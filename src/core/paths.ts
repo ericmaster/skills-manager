@@ -18,18 +18,19 @@ export function resolveRoot(opts?: {
   if (opts?.local) {
     return { path: join(cwd, ".skills-manager"), scope: "workspace" };
   }
+  const globalPath = join(homedir(), ".skills-manager");
   // Auto-detect existing workspace root by walking up from cwd.
   let dir = cwd;
   while (true) {
     const candidate = join(dir, ".skills-manager");
-    if (existsSync(candidate)) {
+    if (candidate !== globalPath && existsSync(candidate)) {
       return { path: candidate, scope: "workspace" };
     }
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return { path: join(homedir(), ".skills-manager"), scope: "global" };
+  return { path: globalPath, scope: "global" };
 }
 
 export function ensureRootLayout(rootPath: string): void {

@@ -37,7 +37,8 @@ export async function runInit(args: { local: boolean }): Promise<number> {
   process.stdout.write(`  ✓ installed authored skill: ${BUNDLED_MANAGER_SKILL}\n`);
 
   // Detect tools and link
-  const detected = await detectTools();
+  const home = root.scope === "workspace" ? join(root.path, "..") : undefined;
+  const detected = await detectTools(home);
   const toolRecords: DetectedToolRecord[] = [];
   const linkSummaries: string[] = [];
   const skipSummaries: string[] = [];
