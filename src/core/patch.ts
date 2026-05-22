@@ -15,7 +15,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
 
-import { readLockfile } from "./manifest.js";
+import { SsotStore } from "./ssot.js";
+import { safeRefSegment } from "./skills-cli.js";
 
 const execFileP = promisify(execFile);
 
@@ -78,14 +79,19 @@ export async function savePatch(
   rootPath: string,
   name: string,
 ): Promise<{ patchPath: string; empty: boolean }> {
-  const ref = readLockfile(rootPath).skills[name]?.resolvedRef;
+  const ref = SsotStore.openAt(rootPath).resolvedRef(name);
   if (!ref) {
     throw new Error(
       `no resolved ref for ${name}; was it added with \`skills-manager add\`?`,
     );
   }
   const liveDir = join(rootPath, "skills", name);
-  const pristineDir = join(rootPath, ".cache", "pristine", `${name}@${ref}`);
+  const pristineDir = join(
+    rootPath,
+    ".cache",
+    "pristine",
+    `${name}@${safeRefSegment(ref)}`,
+  );
   if (!existsSync(liveDir)) {
     throw new Error(`live skill dir missing: ${liveDir}`);
   }

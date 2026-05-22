@@ -1,26 +1,102 @@
-# Phase 4 — `update [<skill>...]` + `update --continue <skill>`
+# Phase 4 — `update [<skill>...]` + `update --continue <skill>` + SSOT store
 
 ## Mission
 
-Implement the full update flow described in [AGENTS.md](../../AGENTS.md) "Update flow". This is the verb that *demonstrates* the project's headline differentiator — survivable customizations across upstream changes.
+Two pieces, landed together in this order:
 
-The update flow has two paths: a clean apply (most common) and a conflict path that pauses for the user to resolve manually, then resumes via `--continue`. Both must leave the live skill in a working state at all times.
+1. **SSOT store** — extract the read/write functions from `src/core/manifest.ts` and `src/core/state.ts` behind a single `SsotStore` class (`src/core/ssot.ts`) that owns serialization, versioning, and atomic flushing. Migrate every existing caller (`init`, `adopt`, `add`, `adoption`, `adopt-scan`). No user-visible change. This phase is the heaviest lockfile consumer — `update` benefits most from the deeper interface, and landing the store first means `runUpdate` is built against the abstraction rather than retrofit into it. Mirrors how Phase 2 bundled the adoption planner before `add`.
+
+2. **`update`** — implement the full update flow described in [AGENTS.md](../../AGENTS.md) "Update flow". This is the verb that *demonstrates* the project's headline differentiator — survivable customizations across upstream changes. The update flow has two paths: a clean apply (most common) and a conflict path that pauses for the user to resolve manually, then resumes via `--continue`. Both must leave the live skill in a working state at all times.
 
 ## Project orientation (read first)
 
 1. [AGENTS.md](../../AGENTS.md) — re-read **Update flow** section in full. The numbered steps there are your spec.
-2. [README.md](../../README.md) — section "Updating" — user-facing contract.
-3. [src/core/patch.ts](../../src/core/patch.ts) — Phase 1's helpers. You'll call `savePatch` and `applyPatch3Way` directly.
-4. [src/core/skills-cli.ts](../../src/core/skills-cli.ts) — Phase 2's `resolveSource`. You'll re-call it during update to fetch the latest ref.
-5. [src/commands/add.ts](../../src/commands/add.ts) — Phase 2. The linker helper extracted there should be reused at update-time too (a swap may need to refresh symlinks; verify whether or not it does and act accordingly).
-6. [src/core/manifest.ts](../../src/core/manifest.ts), [src/core/paths.ts](../../src/core/paths.ts) — primitives.
-7. [tests/init.test.js](../../tests/init.test.js), [tests/add.test.js](../../tests/add.test.js) — test patterns.
+2. [docs/adr/](../adr/) — at minimum [0001](../adr/0001-ssot-and-symlinks.md) (SSOT layout), [0002](../adr/0002-customize-in-place-with-patches.md) (patch lifecycle), [0003](../adr/0003-no-runtime-deps.md) (no deps). Load-bearing for both halves of this phase.
+3. [README.md](../../README.md) — section "Updating" — user-facing contract.
+4. [src/core/patch.ts](../../src/core/patch.ts) — Phase 1's helpers. You'll call `savePatch` and `applyPatch3Way` directly.
+5. [src/core/skills-cli.ts](../../src/core/skills-cli.ts) — Phase 2's `resolveSource`. You'll re-call it during update to fetch the latest ref.
+6. [src/core/linker.ts](../../src/core/linker.ts) — Phase 1.5's symlink seam. The swap may need to refresh symlinks; verify whether or not it does and act accordingly.
+7. [src/core/adoption.ts](../../src/core/adoption.ts) — Phase 2's planner. Pattern reference; `update`'s logic is mostly linear so the planner pattern probably doesn't apply, but read so you know the option exists.
+8. [src/core/manifest.ts](../../src/core/manifest.ts), [src/core/state.ts](../../src/core/state.ts), [src/core/paths.ts](../../src/core/paths.ts) — current SSOT primitives. You'll be replacing the read/write functions in `manifest.ts` and `state.ts` with the new `SsotStore`.
+9. [src/commands/init.ts](../../src/commands/init.ts), [src/commands/adopt.ts](../../src/commands/adopt.ts), [src/commands/add.ts](../../src/commands/add.ts), [src/core/adopt-scan.ts](../../src/core/adopt-scan.ts) — every existing caller of `readManifest` / `writeManifest` / `readLockfile` / `writeLockfile` / `readState` / `writeState`. You'll migrate them all.
+10. [tests/init.test.js](../../tests/init.test.js), [tests/add.test.js](../../tests/add.test.js) — test patterns.
 
-**Confirm Phases 1, 2, and 3 are merged before starting.**
+**Confirm Phases 1, 2, and 3 are merged before starting.** This phase replaces the file-I/O exports of `manifest.ts` / `state.ts`; starting before Phase 3 lands will conflict.
 
 ## Deliverables
 
-### 1. Staging area convention
+Sequence matters: SSOT store first (extract + refactor existing callers), confirmed green by running the existing test suite, then staging convention, then `runUpdate`. The existing tests are the safety net for the migration — if they don't pass after step 2, the refactor is wrong and `runUpdate` cannot start.
+
+### 1. SSOT store: new module `src/core/ssot.ts`
+
+Extract the read/write functions from `src/core/manifest.ts` and `src/core/state.ts` behind a single class that owns serialization, versioning, and atomic flushing. Callers stop seeing file paths, JSON shapes, and `version: 1` checks.
+
+Exports — exactly these, no others:
+
+```ts
+import type {
+  ContribSource,
+  SkillEntry,
+  Manifest,
+  Lockfile,
+  LockedSkill,
+} from "./manifest.js";
+import type { DetectedToolRecord, State } from "./state.js";
+
+export class SsotStore {
+  static openAt(rootPath: string): SsotStore;
+
+  // Skills (manifest)
+  skill(name: string): SkillEntry | undefined;
+  skillNames(): string[];
+  recordAuthoredSkill(name: string): void;
+  recordContribSkill(name: string, source: ContribSource): void;
+  removeSkill(name: string): void;
+  setCustomized(name: string, customized: boolean): void;
+
+  // Lockfile
+  resolvedRef(name: string): string | undefined;
+  pinResolvedRef(name: string, ref: string, atIso?: string): void;
+  clearLock(name: string): void;
+
+  // State
+  tools(): DetectedToolRecord[];
+  recordToolDetection(records: DetectedToolRecord[], nowIso?: string): void;
+  lastDetectedAt(): string | undefined;
+
+  // Flush
+  commit(): void;
+  dirty(): boolean;
+}
+```
+
+Required behavior:
+
+- **`openAt(rootPath)`** — read `<root>/skills.json`, `<root>/skills.lock.json`, `<root>/state.json`. Missing files default to empty `version: 1` shapes. Files with `version !== 1` throw the same error today's modules throw (no migration registry yet — see [ADR-0003](../adr/0003-no-runtime-deps.md) discipline; revisit only when v2 actually arrives).
+- **All `record*` / `pin*` / `clear*` / `setCustomized` methods** — mutate in-memory state only; mark the corresponding file as dirty. Idempotent: recording an already-recorded skill with the same value is a no-op (does not flip the dirty bit).
+- **`commit()`** — for each dirty file, write atomically: `writeFileSync(<path>.tmp, json)` then `renameSync(<path>.tmp, <path>)`. After commit, no files are dirty. A commit with nothing dirty performs zero I/O.
+- **`dirty()`** — true if any file has unflushed changes. Useful for tests and for assertions in command code.
+- **Read methods** — return `undefined` for missing entries. Read methods do not flip the dirty bit.
+- **`pinResolvedRef`** — defaults `atIso` to `new Date().toISOString()` when not provided. Same for `recordToolDetection`'s `nowIso`. Injection points exist for testability.
+- **The store does not own the SSOT directory layout.** `ensureRootLayout` stays in `paths.ts`. The store assumes the root exists; if files are missing it treats them as empty, but the directory itself must exist.
+
+### 2. Refactor existing callers to use the store
+
+Migrate every caller of `readManifest` / `writeManifest` / `readLockfile` / `writeLockfile` / `readState` / `writeState`:
+
+- [src/commands/init.ts](../../src/commands/init.ts)
+- [src/commands/adopt.ts](../../src/commands/adopt.ts)
+- [src/commands/add.ts](../../src/commands/add.ts)
+- [src/core/adoption.ts](../../src/core/adoption.ts) (planner / executor, wherever it touches manifest)
+- [src/core/adopt-scan.ts](../../src/core/adopt-scan.ts)
+
+Pattern: at command entry, `const store = SsotStore.openAt(rootPath)`. Replace direct file I/O with method calls. Call `store.commit()` at command exit (or per-skill in `update`). For read-only commands and the planner's read-only paths, just don't call `commit()`.
+
+Drop the `readManifest` / `writeManifest` / `readLockfile` / `writeLockfile` exports from [src/core/manifest.ts](../../src/core/manifest.ts) and `readState` / `writeState` from [src/core/state.ts](../../src/core/state.ts). **Keep** the type exports (`Manifest`, `SkillEntry`, `ContribSource`, `Lockfile`, `LockedSkill`, `State`, `DetectedToolRecord`) — they're domain vocabulary used by the store and its consumers. The two files become pure type files.
+
+The existing test suite (`tests/init.test.js`, `tests/adopt.test.js`, `tests/add.test.js`, `tests/adoption.test.js`, `tests/linker.test.js`, `tests/patch.test.js`) must continue to pass without modification. Run `pnpm test` after the refactor and before any update work begins; if tests fail, the migration is wrong.
+
+### 3. Staging area convention
 
 Use `<root>/.cache/staging/<skill>/` as the staging directory. A pending update is "live" iff this directory exists and contains a sentinel file (e.g. `.staging-meta.json`) with the resolved-ref it staged from. Define the sentinel format up-front; it's how `--continue` knows which skill is mid-update and what ref to commit back to the lockfile on success.
 
@@ -37,7 +113,7 @@ Use `<root>/.cache/staging/<skill>/` as the staging directory. A pending update 
 
 The sentinel must be excluded from the swap into `skills/<skill>/`.
 
-### 2. Implement `runUpdate()` in `src/commands/update.ts`
+### 4. Implement `runUpdate()` in `src/commands/update.ts`
 
 Replace the stub. Argument shape from `src/cli.ts`: `{ skills: string[], cont: boolean, flags }`.
 
@@ -85,7 +161,25 @@ A self-contained helper that promotes a successful staging tree to live. Steps:
 
 If the swap fails partway, the `oldlive-*` directory holds the previous state and the user can recover manually. Print a recovery hint on swap failure.
 
-### 3. New tests: `tests/update.test.js`
+### 5. New tests
+
+Two test files. The existing test suite must continue to pass without modification — it's the safety net for the SSOT migration.
+
+#### `tests/ssot.test.js` (store unit tests)
+
+Pattern: `node:test`, `node:assert/strict`, `mkdtempSync` for tmp roots. Imports from `../dist/core/ssot.js`. No fake `$HOME` needed — tests work directly against tmp directories.
+
+Cover at least:
+
+1. **`openAt` with missing files.** Empty tmp root (with the SSOT subdirs created via `ensureRootLayout`). `openAt` succeeds. `skill("anything")` returns `undefined`; `skillNames()` is `[]`; `tools()` is `[]`; `dirty()` is `false`.
+2. **Record + commit + reopen round-trips.** Record an authored skill, pin a lock ref, record tool detection. `commit()`. Open a second `SsotStore` against the same root. Same data is returned. `dirty()` is `false`.
+3. **`commit` writes only dirty files.** Pre-write `skills.json` manually. Capture its `mtime`. Open store, mutate only the lockfile, `commit()`. `skills.json`'s `mtime` is unchanged; `skills.lock.json` was rewritten.
+4. **Atomic write.** After `commit()`, no `<path>.tmp` files remain in the root. (Implementation must use `<path>.tmp` + `rename`.)
+5. **Dirty tracking.** `dirty()` is `false` after `openAt`, `true` after a meaningful mutation, `false` after `commit()`. Re-recording the same skill with the same value does not flip dirty.
+6. **Version mismatch throws.** Pre-write `skills.json` with `version: 2`. `openAt` throws.
+7. **Read-only path is filesystem-clean.** Open, call read methods only, `commit()`. No file writes (verify via `mtime` comparison or by leaving the root empty and confirming nothing was created).
+
+#### `tests/update.test.js` (integration)
 
 Tests use local-path sources so we can deterministically simulate "upstream changed." Pattern: build pristine tree v1 in `/tmp/fixture-v1`, `runAdd` it. Then build `/tmp/fixture-v2` (same tree with one line changed in `SKILL.md`), point the manifest's source at it (or rebuild the fixture in place — local-path `add` re-resolves from path), and `runUpdate`.
 
@@ -104,6 +198,15 @@ Cover:
 ## Code review (mandatory)
 
 This is the most failure-prone phase. Do all of the following:
+
+**SSOT store and migration:**
+
+A. **Store purity at boundaries.** After the migration, no caller outside `src/core/ssot.ts` should call `readManifest` / `writeManifest` / `readLockfile` / `writeLockfile` / `readState` / `writeState`. Run `grep -rn "readManifest\|writeManifest\|readLockfile\|writeLockfile\|readState\|writeState" src/` — the only matches should be the store itself (or zero matches if you renamed/inlined). Type imports (`import type { Manifest } from ...`) are fine.
+B. **Atomic write actually happens.** `commit()` must write to `<path>.tmp` and `rename` into place. A direct `writeFileSync(path, ...)` is not atomic and a crash mid-write corrupts the file. Test 4 catches the residue case but not the order — read the implementation.
+C. **Dirty-bit honesty.** Re-recording a skill with the same value should not flip dirty. Test 5 covers it; verify the implementation actually compares before mutating, rather than blindly assigning.
+D. **Existing tests pass before update work begins.** Land the SSOT migration as a discrete commit (or staged step). Run `pnpm test`. If anything fails, the migration is wrong — do not start `runUpdate` until green.
+
+**Update flow:**
 
 1. **Live skill never broken.** Trace every error path. The live skill at `<root>/skills/<skill>/` must be either the pre-update state or the post-swap state. There is no in-between state where the directory is half-replaced or missing. Convince yourself by reading.
 2. **Staging-dir state machine.** Three observable states: absent (no pending update), present-with-clean-tree (after `applyPatch3Way` clean → just before swap; should be transient), present-with-conflict-markers (paused). Confirm `--continue` rejects the third state.
@@ -162,6 +265,11 @@ node bin/skills-manager.js update --continue smoke
 
 ## Done criteria
 
+- `src/core/ssot.ts` exists with the listed exports; `commit()` is atomic; `dirty()` tracks honestly.
+- All existing callers migrated; no `readManifest` / `writeManifest` / `readLockfile` / `writeLockfile` / `readState` / `writeState` calls remain outside the store.
+- `src/core/manifest.ts` and `src/core/state.ts` retain only type exports; their read/write functions are gone.
+- `tests/ssot.test.js` covers the seven listed cases and passes.
+- All existing tests (`tests/init.test.js`, `tests/adopt.test.js`, `tests/add.test.js`, `tests/adoption.test.js`, `tests/linker.test.js`, `tests/patch.test.js`) pass without modification.
 - `src/commands/update.ts` no longer throws `NotImplementedError`.
 - Both default and `--continue` paths work.
 - `tests/update.test.js` covers the nine listed cases and passes.

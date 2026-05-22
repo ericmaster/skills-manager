@@ -12,12 +12,13 @@ export {
   type DetectedTool,
   TOOL_REGISTRY,
 } from "./core/tool-detect.js";
-export {
-  readManifest,
-  writeManifest,
-  readLockfile,
-  writeLockfile,
-  type Manifest,
-  type Lockfile,
+export type {
+  ContribSource,
+  Lockfile,
+  LockedSkill,
+  Manifest,
+  SkillEntry,
+  SkillKind,
 } from "./core/manifest.js";
-export { readState, writeState, type State } from "./core/state.js";
+export type { DetectedToolRecord, State } from "./core/state.js";
+export { SsotStore } from "./core/ssot.js";

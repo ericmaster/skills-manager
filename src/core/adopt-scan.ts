@@ -7,7 +7,8 @@ import {
 } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { listLinkableTools, type DetectedTool } from "./tool-detect.js";
-import { readManifest, type Manifest } from "./manifest.js";
+import type { Manifest } from "./manifest.js";
+import { SsotStore } from "./ssot.js";
 
 export interface AdoptLocation {
   /** Tool id (claude-code, hermes, ...). */
@@ -43,8 +44,8 @@ export async function scanForAdoption(opts: {
   home?: string;
 }): Promise<AdoptScanResult> {
   const tools = await listLinkableTools(opts.home);
-  const manifest = readManifest(opts.rootPath);
-  const managed = new Set(Object.keys(manifest.skills));
+  const store = SsotStore.openAt(opts.rootPath);
+  const managed = new Set(store.skillNames());
 
   // Collect raw locations: { name -> [locations] }, only for real dirs with SKILL.md.
   const byName = new Map<string, AdoptLocation[]>();
@@ -69,7 +70,7 @@ export async function scanForAdoption(opts: {
       if (managed.has(name)) {
         skipped.push({
           name,
-          reason: `already in skills.json (${manifest.skills[name]!.kind})`,
+          reason: `already in skills.json (${store.skill(name)!.kind})`,
         });
         continue;
       }

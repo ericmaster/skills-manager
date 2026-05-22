@@ -126,13 +126,13 @@ Adoption (`adopt <name>` / `adopt --all`):
 |---------|--------|--------|
 | `init [--local]` | Wired | Create SSOT root, scaffold manifest+state, detect tools, install bundled agent skill, link into native tools. `--local` → `<cwd>/.skills-manager/`. |
 | `adopt [<name>] [--all]` | Wired | Pull pre-existing real-dir skills out of detected tool dirs into the SSOT. Default kind: `authored`. Flags: `--from <tool>` and `--keep-other-as <name>` for cross-tool conflicts; `--dry-run`. |
-| `add <source>` | Stub | Install contrib skill from a source. |
-| `list` | Stub | List installed skills with source + ref + customized flag. |
-| `remove <skill>` | Stub | Remove skill, patch, pristine, tool symlinks. |
-| `update [<skill>...]` | Stub | Re-resolve sources and reapply patches. |
-| `update --continue <skill>` | Stub | Resume a paused update after manual conflict resolution. |
-| `diff <skill>` | Stub | Show patch drift between live skill and pristine. |
-| `save-patch <skill>` | Stub | Persist drift to `patches/<skill>.patch`. |
+| `add <source>` | Wired | Install contrib skill from a source. |
+| `list` | Wired | List installed skills with source + ref + customized flag. |
+| `remove <skill>` | Wired | Remove skill, patch, pristine, tool symlinks. |
+| `update [<skill>...]` | Wired | Re-resolve sources and reapply patches. |
+| `update --continue <skill>` | Wired | Resume a paused update after manual conflict resolution. |
+| `diff <skill>` | Wired | Show patch drift between live skill and pristine. |
+| `save-patch <skill>` | Wired | Persist drift to `patches/<skill>.patch`. |
 | `customize <skill>` | Stub | Open skill dir in `$EDITOR`. |
 | `new <name>` | Stub | Scaffold new self-authored skill in `authored/<name>/`. |
 | `tool list` | Stub | Show detected tools and link status. |

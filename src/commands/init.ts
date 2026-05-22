@@ -5,20 +5,8 @@ import {
   getBundledSkillsDir,
   resolveRoot,
 } from "../core/paths.js";
-import {
-  readManifest,
-  readLockfile,
-  writeManifest,
-  writeLockfile,
-  type Manifest,
-  type Lockfile,
-} from "../core/manifest.js";
-import {
-  readState,
-  writeState,
-  type DetectedToolRecord,
-  type State,
-} from "../core/state.js";
+import { SsotStore } from "../core/ssot.js";
+import type { DetectedToolRecord } from "../core/state.js";
 import { detectTools, TOOL_REGISTRY } from "../core/tool-detect.js";
 import { linkSkillIntoTools } from "../core/linker.js";
 
@@ -26,7 +14,6 @@ const BUNDLED_MANAGER_SKILL = "skills-manager";
 
 export async function runInit(args: { local: boolean }): Promise<number> {
   const root = resolveRoot({ local: args.local });
-  const alreadyInitialized = existsSync(join(root.path, "skills.json"));
 
   process.stdout.write(
     `Initializing skills-manager (${root.scope}): ${root.path}\n`,
@@ -34,19 +21,8 @@ export async function runInit(args: { local: boolean }): Promise<number> {
 
   ensureRootLayout(root.path);
 
-  // Manifest + lockfile
-  const manifest: Manifest = alreadyInitialized
-    ? readManifest(root.path)
-    : { version: 1, skills: {} };
-  if (!manifest.skills[BUNDLED_MANAGER_SKILL]) {
-    manifest.skills[BUNDLED_MANAGER_SKILL] = { kind: "authored" };
-  }
-  writeManifest(root.path, manifest);
-
-  const lock: Lockfile = alreadyInitialized
-    ? readLockfile(root.path)
-    : { version: 1, skills: {} };
-  writeLockfile(root.path, lock);
+  const store = SsotStore.openAt(root.path);
+  store.recordAuthoredSkill(BUNDLED_MANAGER_SKILL);
 
   // Install bundled skill into authored/
   const bundledDir = getBundledSkillsDir();
@@ -114,12 +90,8 @@ export async function runInit(args: { local: boolean }): Promise<number> {
     }
   }
 
-  const state: State = {
-    version: 1,
-    tools: toolRecords,
-    lastDetectedAt: new Date().toISOString(),
-  };
-  writeState(root.path, state);
+  store.recordToolDetection(toolRecords);
+  store.commit();
 
   if (linkSummaries.length === 0 && skipSummaries.length === 0) {
     process.stdout.write("  · no agent tools detected on this host\n");

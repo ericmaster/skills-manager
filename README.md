@@ -39,27 +39,45 @@ node bin/skills-manager.js init
 
 `init` creates the SSOT root, scaffolds the manifest and state files, detects installed agent tools, installs the bundled `skills-manager` agent skill, and links it into every detected tool that natively supports `SKILL.md`. Pass `init --local` to target `<cwd>/.skills-manager/` instead of your home directory.
 
-> **Status:** v1 ships `init` as a working end-to-end command. The other verbs exist as stable stubs and will be filled in by follow-up releases (see [Roadmap](#roadmap)).
+## Status
+
+| Command | Status |
+|---------|--------|
+| `init` | Wired |
+| `adopt` | Wired |
+| `add` | Wired |
+| `diff` | Wired |
+| `save-patch` | Wired |
+| `update` / `update --continue` | Wired |
+| `list` | Wired |
+| `remove` | Wired |
+| `customize` | Coming soon |
+| `new` | Coming soon |
+| `tool list` / `tool enable` / `tool disable` | Coming soon |
+| `validate` | Coming soon |
+| `doctor` | Coming soon |
+
+See [Roadmap](#roadmap) for what's planned next.
 
 ## Commands
 
-| Command | What it does |
-|---------|--------------|
-| `init [--local]` | Set up the SSOT and link the bundled agent skill into all detected tools. |
-| `adopt [<name>] [--all]` | Pull skills already living under detected tool dirs into the SSOT. |
-| `add <source>` | Install a contrib skill from a git repo, direct URL, or local path. |
-| `list` | List installed skills with source, ref, and customized flag. |
-| `remove <skill>` | Delete a skill, its patch, its pristine cache, and all tool symlinks. |
-| `update [<skill>...]` | Re-resolve sources and reapply your customization patches. |
-| `update --continue <skill>` | Resume a paused update after manually resolving a 3-way merge conflict. |
-| `diff <skill>` | Show what you've changed in a skill vs. its pristine upstream. |
-| `save-patch <skill>` | Persist your current edits to `patches/<skill>.patch`. |
-| `customize <skill>` | Open a skill directory in `$EDITOR`. |
-| `new <name>` | Scaffold a new self-authored skill. |
-| `tool list` | Show detected tools and which are linked. |
-| `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. |
-| `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. |
-| `doctor` | Print a summary of your environment, dependencies, and any warnings. |
+| Command | What it does | Status |
+|---------|--------------|--------|
+| `init [--local]` | Set up the SSOT and link the bundled agent skill into all detected tools. | Wired |
+| `adopt [<name>] [--all]` | Pull skills already living under detected tool dirs into the SSOT. | Wired |
+| `add <source>` | Install a contrib skill from a git repo, direct URL, or local path. | Wired |
+| `list` | List installed skills with source, ref, and customized flag. | Wired |
+| `remove <skill>` | Delete a skill, its patch, its pristine cache, and all tool symlinks. | Wired |
+| `update [<skill>...]` | Re-resolve sources and reapply your customization patches. | Wired |
+| `update --continue <skill>` | Resume a paused update after manually resolving a 3-way merge conflict. | Wired |
+| `diff <skill>` | Show what you've changed in a skill vs. its pristine upstream. | Wired |
+| `save-patch <skill>` | Persist your current edits to `patches/<skill>.patch`. | Wired |
+| `customize <skill>` | Open a skill directory in `$EDITOR`. | Coming soon |
+| `new <name>` | Scaffold a new self-authored skill. | Coming soon |
+| `tool list` | Show detected tools and which are linked. | Coming soon |
+| `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. | Coming soon |
+| `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. | Coming soon |
+| `doctor` | Print a summary of your environment, dependencies, and any warnings. | Coming soon |
 
 ## Adopting existing skills
 
@@ -125,6 +143,8 @@ Your live, working skill is never left in a broken state.
 ## Workspaces
 
 Run the CLI inside a directory containing `.skills-manager/` and it operates on that directory instead of `~/.skills-manager/`. Workspace and global scopes are **fully isolated**: workspace skills do not inherit from global, and global skills do not bleed into a workspace. Duplicate skill names across the two scopes print a warning but do not block.
+
+Today, `init --local` is the primary verb that sets up a workspace scope. All other wired verbs (`adopt`, `add`, `diff`, `save-patch`, `update`) will respect the workspace scope automatically once the workspace second-pass lands (see [Roadmap](#roadmap)).
 
 This is handy for team-shared, project-specific skills you want to commit to the repo.
 

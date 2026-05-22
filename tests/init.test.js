@@ -43,8 +43,8 @@ test("init creates SSOT layout in fake HOME and links into ~/.claude/skills", as
     assert.ok(manifest.skills["skills-manager"]);
     assert.equal(manifest.skills["skills-manager"].kind, "authored");
 
-    const lock = JSON.parse(readFileSync(join(root, "skills.lock.json"), "utf8"));
-    assert.equal(lock.version, 1);
+    // skills.lock.json is not written until a contrib skill is pinned.
+    assert.equal(existsSync(join(root, "skills.lock.json")), false);
 
     const state = JSON.parse(readFileSync(join(root, "state.json"), "utf8"));
     assert.equal(state.version, 1);
