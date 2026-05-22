@@ -50,7 +50,7 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     id: "antigravity-cli",
     label: "Antigravity CLI",
     probePaths: [".gemini/antigravity", ".config/antigravity"],
-    linkTarget: ".gemini/antigravity/skills",
+    linkTarget: ".gemini/skills",
   },
   {
     id: "opencode",

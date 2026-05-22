@@ -1,6 +1,6 @@
 {
   "name": "skmgr",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Manage agentskills.io-format skills across AI agent tools, with a single source of truth and survivable customizations.",
   "type": "module",
   "bin": {

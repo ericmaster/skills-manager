@@ -66,11 +66,16 @@ export async function runInit(args: { local: boolean }): Promise<number> {
     linkableTools.push(found);
   }
 
-  const linkResults = linkSkillIntoTools(
-    BUNDLED_MANAGER_SKILL,
-    targetSkillDir,
-    linkableTools,
-  );
+  const linkResults = [];
+  const allSkills = store.skillNames();
+  for (const name of allSkills) {
+    const entry = store.skill(name)!;
+    const skillDir = entry.kind === "authored"
+      ? join(root.path, "authored", name)
+      : join(root.path, "skills", name);
+    const results = linkSkillIntoTools(name, skillDir, linkableTools);
+    linkResults.push(...results);
+  }
   for (const r of linkResults) {
     switch (r.status) {
       case "linked":
@@ -79,13 +84,13 @@ export async function runInit(args: { local: boolean }): Promise<number> {
         break;
       case "skipped-non-symlink":
         linkSummaries.push(
-          `  ✗ ${r.toolId.padEnd(12)} link skipped: ${r.message ?? "non-symlink at link path"}`,
+          `  ✗ ${r.toolId.padEnd(12)} link skipped: ${r.message ?? "non-symlink at link path"}`
         );
         break;
       case "failed":
       default:
         linkSummaries.push(
-          `  ✗ ${r.toolId.padEnd(12)} link failed: ${r.message ?? r.status}`,
+          `  ✗ ${r.toolId.padEnd(12)} link failed: ${r.message ?? r.status}`
         );
         break;
     }
