@@ -9,7 +9,7 @@ A CLI and default-installed agent skill for managing [agentskills.io](https://ag
 
 ## Why skills-manager
 
-If you use multiple AI coding agents — Claude Code, Codex, Cursor, Gemini CLI, OpenCode, and friends — you've probably noticed that each one has its own idea of where skills should live and how they should be installed. Tools like [vercel-labs/skills](https://github.com/vercel-labs/skills) already do an excellent job of resolving sources and linking skills into ~54 agent tools. What they don't do:
+If you use multiple AI coding agents — Claude Code, Codex, Cursor, Antigravity CLI, OpenCode, and friends — you've probably noticed that each one has its own idea of where skills should live and how they should be installed. Tools like [vercel-labs/skills](https://github.com/vercel-labs/skills) already do an excellent job of resolving sources and linking skills into ~54 agent tools. What they don't do:
 
 - Treat one canonical directory as the **single source of truth** for every skill on the machine.
 - **Survive customization** of contrib skills across re-downloads — local edits get clobbered when an upstream version is fetched again.
@@ -190,7 +190,7 @@ This is handy for team-shared, project-specific skills you want to commit to the
 | openclaw | Yes | Linked |
 | Codex CLI | Pending spec adoption | Detected, not linked |
 | Cursor | No (uses `.mdc`) | Detected, not linked |
-| Gemini CLI | Pending | Detected, not linked |
+| Antigravity CLI | Yes | Linked |
 | OpenCode | Pending | Detected, not linked |
 | Crush | Pending | Detected, not linked |
 | Aider | No (different model) | Detected, not linked |

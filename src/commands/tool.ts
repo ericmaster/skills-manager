@@ -10,7 +10,7 @@ export async function runTool(args: {
 }): Promise<number> {
   if (args.subcommand === "list") {
     const root = resolveRoot();
-    const home = root.scope === "workspace" ? join(root.path, "..") : undefined;
+    const home = undefined;
     const detected = await detectTools(home);
     process.stdout.write("Tools (detected = ✓, link target in v1 = →):\n");
     for (const entry of TOOL_REGISTRY) {

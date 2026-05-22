@@ -47,9 +47,10 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     probePaths: [".config/Cursor", ".cursor"],
   },
   {
-    id: "gemini-cli",
-    label: "Gemini CLI",
-    probePaths: [".gemini", ".config/gemini"],
+    id: "antigravity-cli",
+    label: "Antigravity CLI",
+    probePaths: [".gemini/antigravity", ".config/antigravity"],
+    linkTarget: ".gemini/antigravity/skills",
   },
   {
     id: "opencode",

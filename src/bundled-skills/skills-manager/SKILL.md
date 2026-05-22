@@ -74,7 +74,7 @@ In v1, only `init`, `tool list`, and `doctor` are fully implemented. Other verbs
 
 ## Limitations to surface honestly
 
-- v1 only links into tools that natively consume the agentskills.io `SKILL.md` spec (Claude Code; Hermes and Openclaw if installed). Cursor, Codex, Gemini CLI, OpenCode, Crush, and Aider are detected but not yet linked — adapters are on the roadmap.
+- v1 only links into tools that natively consume the agentskills.io `SKILL.md` spec (Claude Code, Antigravity CLI; Hermes and Openclaw if installed). Cursor, Codex, OpenCode, Crush, and Aider are detected but not yet linked — adapters are on the roadmap.
 - Source resolution and patch application beyond `init` are stubs in v1. The CLI surface is intentionally fixed so users can rely on it; the implementations land in follow-up releases.
 
 See `AGENTS.md` in the source repo for full architecture, decisions, and roadmap.

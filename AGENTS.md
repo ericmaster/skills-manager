@@ -61,7 +61,7 @@ The CLI shells out to `npx skills <verb> ...` for source resolution and tool ins
 | openclaw | `~/.openclaw/` exists | Yes (assumed) | `~/.openclaw/skills/` |
 | Codex CLI | `codex` on PATH or `~/.codex/` | Pending | n/a v1 |
 | Cursor | `~/.config/Cursor/` or app dir | No (`.mdc`) | n/a v1 |
-| Gemini CLI | `gemini` on PATH or `~/.gemini/` | Pending | n/a v1 |
+| Antigravity CLI | `~/.gemini/antigravity/` exists | Yes | `~/.gemini/antigravity/skills/` |
 | OpenCode | `~/.config/opencode/` exists | Pending | n/a v1 |
 | Crush | `~/.config/crush/` exists | Pending | n/a v1 |
 | Aider | `aider` on PATH | No | n/a v1 |
@@ -133,14 +133,14 @@ Adoption (`adopt <name>` / `adopt --all`):
 | `update --continue <skill>` | Wired | Resume a paused update after manual conflict resolution. |
 | `diff <skill>` | Wired | Show patch drift between live skill and pristine. |
 | `save-patch <skill>` | Wired | Persist drift to `patches/<skill>.patch`. |
-| `customize <skill>` | Planned (v0.2.0) | Open skill dir in `$EDITOR`. |
-| `new <name>` | Planned (v0.2.0) | Scaffold new self-authored skill in `authored/<name>/`. |
+| `customize <skill>` | Wired | Open skill dir in `$EDITOR`. |
+| `new <name>` | Wired | Scaffold new self-authored skill in `authored/<name>/`. |
 | `tool list` | Planned (v0.3.0) | Show detected tools and link status. |
 | `tool enable <name>` / `tool disable <name>` | Planned (v0.3.0) | Opt a detected tool in or out of linking. |
 | `validate [<skill>]` | Planned (v0.3.0) | Wraps `skills-check`. |
 | `promote <skill>` | Planned (v0.3.0) | Move/promote a workspace-local skill to the global SSOT. |
 | `doctor [--all]` / `status` | Planned (v0.3.0) | Print global diagnostic status, active SSOTs, link sites, and workspace overviews. |
-| `doctor` | Planned (v0.2.0) | Print SSOT root, detected tools, dependencies, warnings. |
+| `doctor` | Wired | Print SSOT root, detected tools, dependencies, warnings. |
 
 Stubs throw `NotImplemented`; surface is stable and discoverable.
 

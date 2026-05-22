@@ -1,4 +1,5 @@
 import { existsSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { ensureRootLayout, resolveRoot } from "../core/paths.js";
@@ -19,6 +20,25 @@ export async function runList(args: {
 
   const store = SsotStore.openAt(root.path);
   const names = store.skillNames().sort();
+
+  if (root.scope === "workspace") {
+    const globalPath = join(homedir(), ".skills-manager");
+    const globalManifestPath = join(globalPath, "skills.json");
+    if (existsSync(globalManifestPath)) {
+      try {
+        const globalStore = SsotStore.openAt(globalPath);
+        for (const name of names) {
+          if (globalStore.skill(name)) {
+            process.stderr.write(
+              `warning: skill "${name}" overlaps with a skill in global scope. Workspace copy takes precedence.\n`,
+            );
+          }
+        }
+      } catch {
+        // ignore errors reading global manifest
+      }
+    }
+  }
 
   if (names.length === 0) {
     process.stdout.write("No skills installed.\n");

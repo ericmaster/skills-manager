@@ -380,7 +380,7 @@ async function swap(
   store.commit();
 
   const root = resolveRoot({ cwd: join(rootPath, "..") });
-  const home = root.scope === "workspace" ? join(rootPath, "..") : undefined;
+  const home = undefined;
   const tools = await listLinkableTools(home);
   linkSkillIntoTools(name, liveDir, tools);
 }

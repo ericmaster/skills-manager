@@ -8,10 +8,10 @@ Living document — tick a box when the work lands. Each "Now" item links to a p
 
 The next priority focuses on stabilizing workspace-local operations, providing first-class authoring workflows, and delivering basic troubleshooting diagnostics.
 
-- [ ] **Workspace scope second-pass.** Workspace mode is documented in [AGENTS.md](AGENTS.md) but not yet exercised end-to-end. Verify every command honors `<cwd>/.skills-manager/` when present, guarantees strict isolation from the global store, and add a robust integration smoke test.
-- [ ] **`new <name>`** scaffolding command. Scaffold a new self-authored skill in `authored/<name>/` with a clean `SKILL.md` template matching the [agentskills.io](https://agentskills.io/specification) format.
-- [ ] **`customize <skill>`** command. Open the live skill in the user's `$EDITOR` (checking `process.env.EDITOR`, falling back to common editors or printing helpful fallback instructions).
-- [ ] **`doctor`** diagnostic command. Probes environment health, checks symlink validity, identifies broken/orphaned links, and provides actionable self-healing guidance.
+- [x] **Workspace scope second-pass.** Workspace mode is documented in [AGENTS.md](AGENTS.md) but not yet exercised end-to-end. Verify every command honors `<cwd>/.skills-manager/` when present, guarantees strict isolation from the global store, and add a robust integration smoke test.
+- [x] **`new <name>`** scaffolding command. Scaffold a new self-authored skill in `authored/<name>/` with a clean `SKILL.md` template matching the [agentskills.io](https://agentskills.io/specification) format.
+- [x] **`customize <skill>`** command. Open the live skill in the user's `$EDITOR` (checking `process.env.EDITOR`, falling back to common editors or printing helpful fallback instructions).
+- [x] **`doctor`** diagnostic command. Probes environment health, checks symlink validity, identifies broken/orphaned links, and provides actionable self-healing guidance.
 
 ## Next (v0.3.0 & v0.4.0)
 
@@ -25,7 +25,7 @@ Committed work mapped to subsequent version releases.
 - [ ] **Global Overview Diagnostics (`doctor --all` / `status`):** Provide a global overview of the user's home and detected workspace status, displaying active SSOTs, link sites, and any unmanaged skills per workspace.
 
 ### v0.4.0 — Adapters & Programmatic API
-- [ ] **Adapters for non-native tools.** Translate `SKILL.md` instructions and scripts into Cursor `.mdc` system rules, Aider configurations, and Gemini CLI formats.
+- [ ] **Adapters for non-native tools.** Translate `SKILL.md` instructions and scripts into Cursor `.mdc` system rules and Aider configurations.
 - [ ] **Programmatic API export.** Export the core engine functions from the package so IDE extensions, other developer tools, or third-party wrappers can build on top of `skills-manager` programmatically.
 
 ## Released (v0.1.0) — Core SSOT & Patch Engine

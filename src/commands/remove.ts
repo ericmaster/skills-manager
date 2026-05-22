@@ -57,7 +57,7 @@ export async function runRemove(args: {
   const removed: string[] = [];
 
   // 1. Remove symlinks from all linkable tool dirs.
-  const home = root.scope === "workspace" ? join(root.path, "..") : undefined;
+  const home = undefined;
   const tools = await listLinkableTools(home);
   for (const tool of tools) {
     if (!tool.absLinkTarget) continue;
