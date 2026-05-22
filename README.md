@@ -168,9 +168,14 @@ Your live, working skill is never left in a broken state.
 
 Run the CLI inside a directory containing `.skills-manager/` and it operates on that directory instead of `~/.skills-manager/`. Workspace and global scopes are **fully isolated**: workspace skills do not inherit from global, and global skills do not bleed into a workspace. Duplicate skill names across the two scopes print a warning but do not block.
 
-Today, `init --local` is the primary verb that sets up a workspace scope. All other wired verbs (`adopt`, `add`, `diff`, `save-patch`, `update`) will respect the workspace scope automatically once the workspace second-pass lands (see [Roadmap](#roadmap)).
+Today, `init --local` is the primary verb that sets up a workspace scope. All other wired verbs (`adopt`, `add`, `diff`, `save-patch`, `update`) respect the workspace scope automatically.
 
 This is handy for team-shared, project-specific skills you want to commit to the repo.
+
+> [!IMPORTANT]
+> **Workspace Adoption Behavior:** Because your AI tools (like Claude Code or Hermes) are installed globally on your machine, tool detection scans your home directory (`$HOME`) even when running within a workspace scope.
+> Therefore, running `skills-manager adopt --all` inside a workspace will find unmanaged skills in your global tool directories and adopt them directly into that workspace's local `.skills-manager/authored/` folder.
+> To make your skills available globally for every project, make sure to adopt or add them in the **global scope** (`~/.skills-manager/`) instead of the workspace scope. Link sites in tool folders always hold symlinks, so having them in the global scope keeps them available everywhere.
 
 ## Bundled agent skill
 

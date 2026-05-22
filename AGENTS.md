@@ -138,6 +138,8 @@ Adoption (`adopt <name>` / `adopt --all`):
 | `tool list` | Planned (v0.3.0) | Show detected tools and link status. |
 | `tool enable <name>` / `tool disable <name>` | Planned (v0.3.0) | Opt a detected tool in or out of linking. |
 | `validate [<skill>]` | Planned (v0.3.0) | Wraps `skills-check`. |
+| `promote <skill>` | Planned (v0.3.0) | Move/promote a workspace-local skill to the global SSOT. |
+| `doctor [--all]` / `status` | Planned (v0.3.0) | Print global diagnostic status, active SSOTs, link sites, and workspace overviews. |
 | `doctor` | Planned (v0.2.0) | Print SSOT root, detected tools, dependencies, warnings. |
 
 Stubs throw `NotImplemented`; surface is stable and discoverable.

@@ -21,6 +21,8 @@ Committed work mapped to subsequent version releases.
 - [ ] **`validate [<skill>]`** wrapping `skills-check`. Formally validate `SKILL.md` schema, frontmatter compliance, and required folder structure.
 - [ ] **`tool list` / `tool enable <name>` / `tool disable <name>`.** Fine-grained control to selectively opt detected tools in or out of symlink management.
 - [ ] **Curated starter sets.** `init --preset coding`, `--preset productivity`, etc. — provision a useful, high-quality baseline of skills on first run.
+- [ ] **`promote <skill>` (Workspace-to-Global Migration):** Move/promote a workspace-local skill (authored or customized contrib) to the global SSOT, updating manifests and re-linking tools so it is available to all projects.
+- [ ] **Global Overview Diagnostics (`doctor --all` / `status`):** Provide a global overview of the user's home and detected workspace status, displaying active SSOTs, link sites, and any unmanaged skills per workspace.
 
 ### v0.4.0 — Adapters & Programmatic API
 - [ ] **Adapters for non-native tools.** Translate `SKILL.md` instructions and scripts into Cursor `.mdc` system rules, Aider configurations, and Gemini CLI formats.
