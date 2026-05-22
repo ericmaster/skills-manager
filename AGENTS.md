@@ -133,12 +133,12 @@ Adoption (`adopt <name>` / `adopt --all`):
 | `update --continue <skill>` | Wired | Resume a paused update after manual conflict resolution. |
 | `diff <skill>` | Wired | Show patch drift between live skill and pristine. |
 | `save-patch <skill>` | Wired | Persist drift to `patches/<skill>.patch`. |
-| `customize <skill>` | Stub | Open skill dir in `$EDITOR`. |
-| `new <name>` | Stub | Scaffold new self-authored skill in `authored/<name>/`. |
-| `tool list` | Stub | Show detected tools and link status. |
-| `tool enable <name>` / `tool disable <name>` | Stub | Opt a detected tool in or out of linking. |
-| `validate [<skill>]` | Stub | Wraps `skills-check`. |
-| `doctor` | Stub | Print SSOT root, detected tools, dependencies, warnings. |
+| `customize <skill>` | Planned (v0.2.0) | Open skill dir in `$EDITOR`. |
+| `new <name>` | Planned (v0.2.0) | Scaffold new self-authored skill in `authored/<name>/`. |
+| `tool list` | Planned (v0.3.0) | Show detected tools and link status. |
+| `tool enable <name>` / `tool disable <name>` | Planned (v0.3.0) | Opt a detected tool in or out of linking. |
+| `validate [<skill>]` | Planned (v0.3.0) | Wraps `skills-check`. |
+| `doctor` | Planned (v0.2.0) | Print SSOT root, detected tools, dependencies, warnings. |
 
 Stubs throw `NotImplemented`; surface is stable and discoverable.
 

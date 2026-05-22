@@ -75,11 +75,11 @@ node bin/skills-manager.js init
 | `update` / `update --continue` | Wired |
 | `list` | Wired |
 | `remove` | Wired |
-| `customize` | Coming soon |
-| `new` | Coming soon |
-| `tool list` / `tool enable` / `tool disable` | Coming soon |
-| `validate` | Coming soon |
-| `doctor` | Coming soon |
+| `customize` | Planned (v0.2.0) |
+| `new` | Planned (v0.2.0) |
+| `tool list` / `tool enable` / `tool disable` | Planned (v0.3.0) |
+| `validate` | Planned (v0.3.0) |
+| `doctor` | Planned (v0.2.0) |
 
 See [Roadmap](#roadmap) for what's planned next.
 
@@ -96,12 +96,12 @@ See [Roadmap](#roadmap) for what's planned next.
 | `update --continue <skill>` | Resume a paused update after manually resolving a 3-way merge conflict. | Wired |
 | `diff <skill>` | Show what you've changed in a skill vs. its pristine upstream. | Wired |
 | `save-patch <skill>` | Persist your current edits to `patches/<skill>.patch`. | Wired |
-| `customize <skill>` | Open a skill directory in `$EDITOR`. | Coming soon |
-| `new <name>` | Scaffold a new self-authored skill. | Coming soon |
-| `tool list` | Show detected tools and which are linked. | Coming soon |
-| `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. | Coming soon |
-| `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. | Coming soon |
-| `doctor` | Print a summary of your environment, dependencies, and any warnings. | Coming soon |
+| `customize <skill>` | Open a skill directory in `$EDITOR`. | Planned (v0.2.0) |
+| `new <name>` | Scaffold a new self-authored skill. | Planned (v0.2.0) |
+| `tool list` | Show detected tools and which are linked. | Planned (v0.3.0) |
+| `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. | Planned (v0.3.0) |
+| `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. | Planned (v0.3.0) |
+| `doctor` | Print a summary of your environment, dependencies, and any warnings. | Planned (v0.2.0) |
 
 ## Adopting existing skills
 

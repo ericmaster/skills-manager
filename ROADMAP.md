@@ -4,9 +4,31 @@ What `skills-manager` is working on, what's next, and what has been considered a
 
 Living document — tick a box when the work lands. Each "Now" item links to a phase prompt under [docs/phases/](docs/phases/) designed to be fed to a fresh agent session in a single iteration. Whenever a checkbox flips to ticked, also flip the matching row in the **CLI surface** table at [AGENTS.md](AGENTS.md) from `Stub` to `Wired`.
 
-## Now
+## Now (v0.2.0 — Workspace & Authoring Experience)
 
-The headline differentiator (**survivable customizations of contrib skills across upstream updates**) becomes real once these verbs land. Order matters — later phases depend on earlier ones.
+The next priority focuses on stabilizing workspace-local operations, providing first-class authoring workflows, and delivering basic troubleshooting diagnostics.
+
+- [ ] **Workspace scope second-pass.** Workspace mode is documented in [AGENTS.md](AGENTS.md) but not yet exercised end-to-end. Verify every command honors `<cwd>/.skills-manager/` when present, guarantees strict isolation from the global store, and add a robust integration smoke test.
+- [ ] **`new <name>`** scaffolding command. Scaffold a new self-authored skill in `authored/<name>/` with a clean `SKILL.md` template matching the [agentskills.io](https://agentskills.io/specification) format.
+- [ ] **`customize <skill>`** command. Open the live skill in the user's `$EDITOR` (checking `process.env.EDITOR`, falling back to common editors or printing helpful fallback instructions).
+- [ ] **`doctor`** diagnostic command. Probes environment health, checks symlink validity, identifies broken/orphaned links, and provides actionable self-healing guidance.
+
+## Next (v0.3.0 & v0.4.0)
+
+Committed work mapped to subsequent version releases.
+
+### v0.3.0 — Tooling & Validation
+- [ ] **`validate [<skill>]`** wrapping `skills-check`. Formally validate `SKILL.md` schema, frontmatter compliance, and required folder structure.
+- [ ] **`tool list` / `tool enable <name>` / `tool disable <name>`.** Fine-grained control to selectively opt detected tools in or out of symlink management.
+- [ ] **Curated starter sets.** `init --preset coding`, `--preset productivity`, etc. — provision a useful, high-quality baseline of skills on first run.
+
+### v0.4.0 — Adapters & Programmatic API
+- [ ] **Adapters for non-native tools.** Translate `SKILL.md` instructions and scripts into Cursor `.mdc` system rules, Aider configurations, and Gemini CLI formats.
+- [ ] **Programmatic API export.** Export the core engine functions from the package so IDE extensions, other developer tools, or third-party wrappers can build on top of `skills-manager` programmatically.
+
+## Released (v0.1.0) — Core SSOT & Patch Engine
+
+The foundation of the single source of truth and survivable customizations.
 
 - [x] **Phase 1 — Patch helpers foundation.** [docs/phases/phase-1-patch-helpers.md](docs/phases/phase-1-patch-helpers.md)
   Pure helpers in `src/core/patch.ts`: `diffSkill`, `savePatch`, `applyPatch3Way`. No command wiring. Tests in `tests/patch.test.js`.
@@ -21,18 +43,6 @@ The headline differentiator (**survivable customizations of contrib skills acros
 - [x] **Phase 5 — `remove <skill>` + `list`.** [docs/phases/phase-5-remove-and-list.md](docs/phases/phase-5-remove-and-list.md)
   Tear down all artifacts and tool symlinks; list with the `customized` flag. Tests in `tests/remove-list.test.js`.
 
-## Next
-
-Committed work that hasn't been scoped into phase prompts yet.
-
-- [ ] **Workspace scope second-pass.** Workspace mode is documented in [AGENTS.md](AGENTS.md) but not yet exercised end-to-end. Verify every command honors `<cwd>/.skills-manager/` when present, with isolation from the global store, and add a smoke test.
-- [ ] **`validate [<skill>]`** wrapping `skills-check`.
-- [ ] **Curated starter sets.** `init --preset coding`, `--preset productivity`, etc. — provision a useful baseline of skills on first run.
-- [ ] **Adapters for non-native-`SKILL.md` tools.** Cursor (`.mdc`), Aider, OpenCode, Crush, Gemini CLI, and AGENTS.md-style consumers. Detection already lists them; adapters translate `SKILL.md` into each tool's expected format.
-- [ ] **Programmatic API export** from the package, once the CLI surface stabilizes after the Now phase.
-- [ ] **`customize <skill>`** (open in `$EDITOR`) and **`new <name>`** (scaffold authored skill).
-- [ ] **`tool list` / `tool enable` / `tool disable`.**
-- [ ] **`doctor`.**
 
 ## Considered, not pursuing right now
 
