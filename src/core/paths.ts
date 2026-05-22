@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,22 +15,53 @@ export function resolveRoot(opts?: {
   cwd?: string;
 }): ResolvedRoot {
   const cwd = opts?.cwd ?? process.cwd();
-  if (opts?.local) {
-    return { path: join(cwd, ".skills-manager"), scope: "workspace" };
-  }
-  const globalPath = join(homedir(), ".skills-manager");
-  // Auto-detect existing workspace root by walking up from cwd.
-  let dir = cwd;
-  while (true) {
-    const candidate = join(dir, ".skills-manager");
-    if (candidate !== globalPath && existsSync(candidate)) {
-      return { path: candidate, scope: "workspace" };
+  
+  const resolved = (() => {
+    if (opts?.local) {
+      return { path: join(cwd, ".skills-manager"), scope: "workspace" as const };
     }
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
+    const globalPath = join(homedir(), ".skills-manager");
+    // Auto-detect existing workspace root by walking up from cwd.
+    let dir = cwd;
+    while (true) {
+      const candidate = join(dir, ".skills-manager");
+      if (candidate !== globalPath && existsSync(candidate)) {
+        return { path: candidate, scope: "workspace" as const };
+      }
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+    return { path: globalPath, scope: "global" as const };
+  })();
+
+  if (resolved.scope === "workspace") {
+    // Lazily register workspace path in global state.json
+    const globalPath = join(homedir(), ".skills-manager");
+    const globalStateFile = join(globalPath, "state.json");
+    if (existsSync(globalStateFile)) {
+      try {
+        const text = readFileSync(globalStateFile, "utf8");
+        const state = JSON.parse(text);
+        if (state.version === 1) {
+          if (!state.workspaces) {
+            state.workspaces = [];
+          }
+          if (!state.workspaces.includes(resolved.path)) {
+            state.workspaces.push(resolved.path);
+            const json = JSON.stringify(state, null, 2) + "\n";
+            const tmp = `${globalStateFile}.tmp`;
+            writeFileSync(tmp, json);
+            renameSync(tmp, globalStateFile);
+          }
+        }
+      } catch {
+        // Safe catch - do not block CLI if global state is corrupt or locked
+      }
+    }
   }
-  return { path: globalPath, scope: "global" };
+
+  return resolved;
 }
 
 export function ensureRootLayout(rootPath: string): void {

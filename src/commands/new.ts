@@ -84,7 +84,12 @@ Detailed instructions for the agent.
   // Link to detected native tools
   const home = undefined;
   const tools = await listLinkableTools(home);
-  const linkResults = linkSkillIntoTools(name, targetDir, tools);
+  const records = store.tools();
+  const enabledTools = tools.filter((t) => {
+    const record = records.find((r) => r.id === t.id);
+    return record ? record.enabled : true;
+  });
+  const linkResults = linkSkillIntoTools(name, targetDir, enabledTools);
 
   // Write manifest
   store.commit();

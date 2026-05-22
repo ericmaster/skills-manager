@@ -4,7 +4,7 @@ description: Manage agentskills.io-format skills via the skills-manager CLI. Use
 license: MIT
 metadata:
   author: skills-manager
-  version: "0.1"
+  version: "0.3.0"
 ---
 
 # skills-manager
@@ -20,6 +20,8 @@ Use this skill whenever the user asks you to:
 - Show diffs between a customized skill and its pristine.
 - Save the current customization as a patch.
 - Scaffold a new self-authored skill.
+- Create, configure, or apply skill presets.
+- Migrate/promote a workspace-local skill up to the global SSOT.
 - Validate skills or diagnose the manager's environment.
 - Inspect or toggle which tools the manager links skills into.
 
@@ -37,9 +39,9 @@ Run `skills-manager <verb> [args]` from a terminal.
 
 | Verb | Purpose |
 |------|---------|
-| `init [--local]` | Bootstrap the SSOT, detect agent tools, install this manager skill, link it into native-SKILL.md tools. Use `--local` for workspace scope. |
-| `add <source>` | Install a contrib skill. `<source>` may be `owner/repo`, full git URL, GitLab URL, URL to a `SKILL.md` or tarball, or a local path. |
-| `list` | List installed skills with source, ref, and whether they're customized. |
+| `init [--local] [--preset=<name>]` | Bootstrap the SSOT, detect agent tools, install this manager skill, link it into native-SKILL.md tools. Use `--local` for workspace scope. Supports bootstrapping with a preset. |
+| `add <source>` | Install a contrib skill from a git repo (owner/repo or URL), direct URL, or local path. |
+| `list` | List installed skills with source, ref, and whether they're customized (drifted vs. pristine). |
 | `remove <skill>` | Uninstall a skill (removes its files, patch, pristine, and tool symlinks). |
 | `update [<skill>...]` | Re-resolve sources and reapply patches. Bare `update` = all skills. |
 | `update --continue <skill>` | Resume a paused update after manually resolving conflicts. |
@@ -47,12 +49,14 @@ Run `skills-manager <verb> [args]` from a terminal.
 | `save-patch <skill>` | Persist current drift to `patches/<skill>.patch`. |
 | `customize <skill>` | Open the skill dir in `$EDITOR`. |
 | `new <name>` | Scaffold a new self-authored skill in `authored/<name>/`. |
+| `preset <list\|create\|add\|remove>` | Configure custom presets, add/remove skills, or list presets. |
+| `promote <skill>` | Migrate a workspace-local skill (authored or contrib) to the global SSOT. |
 | `tool list` | Show detected tools and which are link targets. |
-| `tool enable <name>` / `tool disable <name>` | Opt a detected tool into or out of linking. |
-| `validate [<skill>]` | Validate a skill (or all skills) via `skills-check`. |
-| `doctor` | Print environment diagnostics. |
+| `tool enable <name>` / `tool disable <name>` | Enable or disable a tool for symlink linking immediately. |
+| `validate [<skill>]` | Validate a skill (or all skills) via `skills-check` subprocess. |
+| `doctor [--all]` | Print environment diagnostics. Use `--all` to run across all registered workspace and global scopes. |
 
-In v1, only `init`, `tool list`, and `doctor` are fully implemented. Other verbs print a friendly "not yet implemented" error and direct the user to the roadmap in AGENTS.md. When the user asks for a stubbed verb, say so plainly and offer to do the closest thing manually (e.g. for `add` you can clone the source and copy a SKILL.md by hand, then they can re-run `init` to link it).
+All verbs in this command set are fully implemented and integrated.
 
 ## Workflow guidance
 
@@ -70,11 +74,11 @@ In v1, only `init`, `tool list`, and `doctor` are fully implemented. Other verbs
 - "What did I change in the X skill?" → `skills-manager diff x`.
 - "Make my edit to X stick across updates" → `skills-manager save-patch x`.
 - "Start a new skill called Y" → `skills-manager new y`, then edit `~/.skills-manager/authored/y/SKILL.md`.
-- "Why isn't Cursor seeing my skills?" → `skills-manager doctor` and explain whether Cursor is in v1 link scope (it isn't yet — adapter pending).
+- "Create a new preset called frontend with the journal skill" → `skills-manager preset create frontend` and `skills-manager preset add frontend journal`.
+- "Move the workspace skill to global" → `skills-manager promote <skill>`.
 
 ## Limitations to surface honestly
 
 - v1 only links into tools that natively consume the agentskills.io `SKILL.md` spec (Claude Code, Antigravity CLI; Hermes and Openclaw if installed). Cursor, Codex, OpenCode, Crush, and Aider are detected but not yet linked — adapters are on the roadmap.
-- Source resolution and patch application beyond `init` are stubs in v1. The CLI surface is intentionally fixed so users can rely on it; the implementations land in follow-up releases.
 
-See `AGENTS.md` in the source repo for full architecture, decisions, and roadmap.
+See `ROADMAP.md` in the source repo for full architecture, decisions, and roadmap.

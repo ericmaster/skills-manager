@@ -11,6 +11,8 @@ import { runTool } from "./commands/tool.js";
 import { runValidate } from "./commands/validate.js";
 import { runDoctor } from "./commands/doctor.js";
 import { runAdopt } from "./commands/adopt.js";
+import { runPreset } from "./commands/preset.js";
+import { runPromote } from "./commands/promote.js";
 
 interface ParsedArgs {
   command: string | undefined;
@@ -49,7 +51,8 @@ const HELP = `skills-manager — manage agentskills.io-format skills across AI a
 Usage: skills-manager <command> [args] [flags]
 
 Commands:
-  init [--local]              Bootstrap the SSOT, detect tools, install the manager skill.
+  init [--local] [--preset=<name>]
+                              Bootstrap the SSOT, detect tools, install the manager skill.
   adopt [<name>] [--all]      Adopt skills already living under detected tool dirs.
   add <source>                Install a contrib skill from a git repo, URL, or local path.
   list                        List installed skills.
@@ -62,10 +65,14 @@ Commands:
   tool <list|enable|disable> [name]
                               Inspect or toggle linkable tools.
   validate [<skill>]          Validate skill(s) via skills-check.
+  preset <list|create|add|remove> [name] [skill]
+                              Manage skill presets.
+  promote <skill>             Promote a workspace skill to the global SSOT.
+  status                      Alias for doctor --all.
   doctor                      Print environment and configuration diagnostics.
   help                        Show this help.
 
-In v1, \`init\` and \`adopt\` are fully implemented. Other commands are stubs.
+In v1, all commands are fully implemented.
 
 See AGENTS.md for full documentation.`;
 
@@ -80,7 +87,10 @@ export async function main(rawArgs: string[]): Promise<number> {
   try {
     switch (command) {
       case "init":
-        return await runInit({ local: flags.local === true });
+        return await runInit({
+          local: flags.local === true,
+          preset: typeof flags.preset === "string" ? flags.preset : undefined,
+        });
       case "adopt":
         return await runAdopt({ name: positional[0], flags });
       case "add":
@@ -111,6 +121,22 @@ export async function main(rawArgs: string[]): Promise<number> {
         });
       case "validate":
         return await runValidate({ skill: positional[0], flags });
+      case "preset":
+        return await runPreset({
+          subcommand: positional[0],
+          name: positional[1],
+          skill: positional[2],
+          flags,
+        });
+      case "promote":
+        return await runPromote({
+          skill: positional[0],
+          flags,
+        });
+      case "status":
+        return await runDoctor({
+          flags: { ...flags, all: true },
+        });
       case "doctor":
         return await runDoctor({ flags });
       default:

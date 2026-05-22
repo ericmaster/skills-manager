@@ -10,4 +10,5 @@ export interface State {
   version: 1;
   tools: DetectedToolRecord[];
   lastDetectedAt?: string;
+  workspaces?: string[];
 }

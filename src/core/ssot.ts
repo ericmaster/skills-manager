@@ -147,6 +147,27 @@ export class SsotStore {
     return this.#state.lastDetectedAt;
   }
 
+  workspaces(): string[] {
+    return this.#state.workspaces ? [...this.#state.workspaces] : [];
+  }
+
+  recordWorkspace(path: string): void {
+    if (!this.#state.workspaces) {
+      this.#state.workspaces = [];
+    }
+    if (this.#state.workspaces.includes(path)) return;
+    this.#state.workspaces.push(path);
+    this.#stateDirty = true;
+  }
+
+  removeWorkspace(path: string): void {
+    if (!this.#state.workspaces) return;
+    const idx = this.#state.workspaces.indexOf(path);
+    if (idx < 0) return;
+    this.#state.workspaces.splice(idx, 1);
+    this.#stateDirty = true;
+  }
+
   // Flush -------------------------------------------------------------------
 
   commit(): void {

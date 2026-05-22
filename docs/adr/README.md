@@ -20,6 +20,7 @@ Read these before proposing architectural changes — many directions look attra
 - [0006 — Workspace scope is fully isolated from global](0006-workspace-scope-isolation.md)
 - [0007 — `node --test` for the v1 test runner](0007-node-test-runner.md)
 - [0008 — `adopt` produces only authored skills in v1](0008-adopt-as-authored-only.md)
+- [0009 — Track local workspace scopes via lazy global state registration](0009-workspace-lazy-registration-global-state.md)
 
 ## Adding a new ADR
 

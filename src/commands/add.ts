@@ -53,7 +53,12 @@ export async function runAdd(args: {
 
     const home = undefined;
     const tools = await listLinkableTools(home);
-    const linkResults = linkSkillIntoTools(skillName, liveDir, tools);
+    const records = store.tools();
+    const enabledTools = tools.filter((t) => {
+      const record = records.find((r) => r.id === t.id);
+      return record ? record.enabled : true;
+    });
+    const linkResults = linkSkillIntoTools(skillName, liveDir, enabledTools);
 
     // Manifest writes go last — only commit when symlinking has run.
     store.commit();

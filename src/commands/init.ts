@@ -1,4 +1,5 @@
-import { cpSync, existsSync } from "node:fs";
+import { cpSync, existsSync, rmSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import {
   ensureRootLayout,
@@ -9,10 +10,12 @@ import { SsotStore } from "../core/ssot.js";
 import type { DetectedToolRecord } from "../core/state.js";
 import { detectTools, TOOL_REGISTRY } from "../core/tool-detect.js";
 import { linkSkillIntoTools } from "../core/linker.js";
+import { PresetsStore } from "../core/preset.js";
+import { resolveSourceFromManifest } from "../core/skills-cli.js";
 
 const BUNDLED_MANAGER_SKILL = "skills-manager";
 
-export async function runInit(args: { local: boolean }): Promise<number> {
+export async function runInit(args: { local: boolean; preset?: string }): Promise<number> {
   const root = resolveRoot({ local: args.local });
 
   process.stdout.write(
@@ -36,6 +39,49 @@ export async function runInit(args: { local: boolean }): Promise<number> {
   cpSync(sourceSkillDir, targetSkillDir, { recursive: true });
   process.stdout.write(`  ✓ installed authored skill: ${BUNDLED_MANAGER_SKILL}\n`);
 
+  if (args.preset) {
+    const presetsStore = PresetsStore.openAt(root.path);
+    let preset = presetsStore.preset(args.preset);
+    if (!preset) {
+      // Fallback to global preset store if workspace-local init
+      const globalPath = join(homedir(), ".skills-manager");
+      if (existsSync(globalPath)) {
+        const globalPresetsStore = PresetsStore.openAt(globalPath);
+        preset = globalPresetsStore.preset(args.preset);
+      }
+    }
+    if (!preset) {
+      process.stderr.write(`error: preset "${args.preset}" not found.\n`);
+      return 1;
+    }
+    process.stdout.write(`Bootstrapping with preset: ${args.preset}\n`);
+    for (const [skName, sk] of Object.entries(preset.skills)) {
+      if (store.skill(skName)) {
+        process.stdout.write(`  · skill "${skName}" already exists, skipping.\n`);
+        continue;
+      }
+      if (sk.kind === "contrib" && sk.source) {
+        process.stdout.write(`  Installing preset skill "${skName}"...\n`);
+        try {
+          const resolved = await resolveSourceFromManifest(sk.source, root.path);
+          const liveDir = join(root.path, "skills", resolved.skillName);
+          if (existsSync(liveDir)) {
+            rmSync(liveDir, { recursive: true, force: true });
+          }
+          cpSync(resolved.pristinePath, liveDir, { recursive: true });
+          store.recordContribSkill(resolved.skillName, resolved.source);
+          store.pinResolvedRef(resolved.skillName, resolved.ref);
+          process.stdout.write(`  ✓ installed preset skill: ${resolved.skillName}\n`);
+        } catch (err: any) {
+          process.stderr.write(`  ✗ failed to install preset skill "${skName}": ${err.message}\n`);
+          return 1;
+        }
+      } else {
+        process.stdout.write(`  · skipped non-contrib or source-less preset skill: ${skName}\n`);
+      }
+    }
+  }
+
   // Detect tools and link
   const home = undefined;
   const detected = await detectTools(home);
@@ -44,16 +90,19 @@ export async function runInit(args: { local: boolean }): Promise<number> {
   const skipSummaries: string[] = [];
   const linkableTools: typeof detected = [];
 
+  const existingTools = store.tools();
+
   for (const entry of TOOL_REGISTRY) {
     const found = detected.find((d) => d.id === entry.id);
     if (!found) continue;
     const linkable = !!found.absLinkTarget;
+    const existing = existingTools.find((t) => t.id === entry.id);
     const record: DetectedToolRecord = {
       id: entry.id,
       detectedAt: new Date().toISOString(),
       linkable,
       linkTarget: found.absLinkTarget,
-      enabled: linkable,
+      enabled: existing ? existing.enabled : linkable,
     };
     toolRecords.push(record);
 

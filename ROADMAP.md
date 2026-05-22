@@ -4,34 +4,29 @@ What `skills-manager` is working on, what's next, and what has been considered a
 
 Living document — tick a box when the work lands. Each "Now" item links to a phase prompt under [docs/phases/](docs/phases/) designed to be fed to a fresh agent session in a single iteration. Whenever a checkbox flips to ticked, also flip the matching row in the **CLI surface** table at [AGENTS.md](AGENTS.md) from `Stub` to `Wired`.
 
-## Now (v0.2.0 — Workspace & Authoring Experience)
+## Now (v0.4.0 — Adapters & Programmatic API)
 
-The next priority focuses on stabilizing workspace-local operations, providing first-class authoring workflows, and delivering basic troubleshooting diagnostics.
+The next priority focuses on building adapters for non-native tools and exporting a programmatic API.
 
+- [ ] **Adapters for non-native tools.** Translate `SKILL.md` instructions and scripts into Cursor `.mdc` system rules and Aider configurations.
+- [ ] **Programmatic API export.** Export the core engine functions from the package so IDE extensions, other developer tools, or third-party wrappers can build on top of `skills-manager` programmatically.
+
+## Released
+
+### v0.3.0 — Tooling & Validation
+- [x] **`validate [<skill>]`** wrapping `skills-check`. Formally validate `SKILL.md` schema, frontmatter compliance, and required folder structure.
+- [x] **`tool list` / `tool enable <name>` / `tool disable <name>`.** Fine-grained control to selectively opt detected tools in or out of symlink management.
+- [x] **Curated starter sets.** `init --preset coding`, `--preset productivity`, etc. — provision a useful, high-quality baseline of skills on first run.
+- [x] **`promote <skill>` (Workspace-to-Global Migration):** Move/promote a workspace-local skill (authored or customized contrib) to the global SSOT, updating manifests and re-linking tools so it is available to all projects.
+- [x] **Global Overview Diagnostics (`doctor --all` / `status`):** Provide a global overview of the user's home and detected workspace status, displaying active SSOTs, link sites, and any unmanaged skills per workspace.
+
+### v0.2.0 — Workspace & Authoring Experience
 - [x] **Workspace scope second-pass.** Workspace mode is documented in [AGENTS.md](AGENTS.md) but not yet exercised end-to-end. Verify every command honors `<cwd>/.skills-manager/` when present, guarantees strict isolation from the global store, and add a robust integration smoke test.
 - [x] **`new <name>`** scaffolding command. Scaffold a new self-authored skill in `authored/<name>/` with a clean `SKILL.md` template matching the [agentskills.io](https://agentskills.io/specification) format.
 - [x] **`customize <skill>`** command. Open the live skill in the user's `$EDITOR` (checking `process.env.EDITOR`, falling back to common editors or printing helpful fallback instructions).
 - [x] **`doctor`** diagnostic command. Probes environment health, checks symlink validity, identifies broken/orphaned links, and provides actionable self-healing guidance.
 
-## Next (v0.3.0 & v0.4.0)
-
-Committed work mapped to subsequent version releases.
-
-### v0.3.0 — Tooling & Validation
-- [ ] **`validate [<skill>]`** wrapping `skills-check`. Formally validate `SKILL.md` schema, frontmatter compliance, and required folder structure.
-- [ ] **`tool list` / `tool enable <name>` / `tool disable <name>`.** Fine-grained control to selectively opt detected tools in or out of symlink management.
-- [ ] **Curated starter sets.** `init --preset coding`, `--preset productivity`, etc. — provision a useful, high-quality baseline of skills on first run.
-- [ ] **`promote <skill>` (Workspace-to-Global Migration):** Move/promote a workspace-local skill (authored or customized contrib) to the global SSOT, updating manifests and re-linking tools so it is available to all projects.
-- [ ] **Global Overview Diagnostics (`doctor --all` / `status`):** Provide a global overview of the user's home and detected workspace status, displaying active SSOTs, link sites, and any unmanaged skills per workspace.
-
-### v0.4.0 — Adapters & Programmatic API
-- [ ] **Adapters for non-native tools.** Translate `SKILL.md` instructions and scripts into Cursor `.mdc` system rules and Aider configurations.
-- [ ] **Programmatic API export.** Export the core engine functions from the package so IDE extensions, other developer tools, or third-party wrappers can build on top of `skills-manager` programmatically.
-
-## Released (v0.1.0) — Core SSOT & Patch Engine
-
-The foundation of the single source of truth and survivable customizations.
-
+### v0.1.0 — Core SSOT & Patch Engine
 - [x] **Phase 1 — Patch helpers foundation.** [docs/phases/phase-1-patch-helpers.md](docs/phases/phase-1-patch-helpers.md)
   Pure helpers in `src/core/patch.ts`: `diffSkill`, `savePatch`, `applyPatch3Way`. No command wiring. Tests in `tests/patch.test.js`.
 - [x] **Phase 1.5 — Linker seam.** [docs/phases/phase-1.5-linker-seam.md](docs/phases/phase-1.5-linker-seam.md)

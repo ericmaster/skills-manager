@@ -382,7 +382,12 @@ async function swap(
   const root = resolveRoot({ cwd: join(rootPath, "..") });
   const home = undefined;
   const tools = await listLinkableTools(home);
-  linkSkillIntoTools(name, liveDir, tools);
+  const records = store.tools();
+  const enabledTools = tools.filter((t) => {
+    const record = records.find((r) => r.id === t.id);
+    return record ? record.enabled : true;
+  });
+  linkSkillIntoTools(name, liveDir, enabledTools);
 }
 
 function clearWorkingTree(dir: string): void {
