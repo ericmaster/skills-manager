@@ -31,6 +31,30 @@ The CLI delegates source resolution and the bulk of the multi-agent compatibilit
 
 ## Installation
 
+### From NPM (Recommended)
+
+You can run the tool directly without manual cloning and compilation:
+
+```bash
+# Run one-off to initialize
+npx skmgr init
+
+# Or install globally to use the `skills-manager` command anywhere
+npm install -g skmgr
+# or
+pnpm add -g skmgr
+```
+
+Once installed globally, you can run any command directly:
+
+```bash
+skills-manager init
+```
+
+### From Source (Development)
+
+If you are developing or contributing to the project:
+
 ```bash
 pnpm install
 pnpm build
