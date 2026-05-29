@@ -62,6 +62,7 @@ The CLI shells out to `npx skills <verb> ...` for source resolution and tool ins
 | Codex CLI | `codex` on PATH or `~/.codex/` | Pending | n/a v1 |
 | Cursor | `~/.config/Cursor/` or app dir | No (`.mdc`) | n/a v1 |
 | Antigravity CLI | `~/.gemini/antigravity/` exists | Yes | `~/.gemini/skills/` |
+| GitHub Copilot CLI | `~/.copilot/` exists | Yes | `~/.copilot/skills/` |
 | OpenCode | `~/.config/opencode/` exists | Pending | n/a v1 |
 | Crush | `~/.config/crush/` exists | Pending | n/a v1 |
 | Aider | `aider` on PATH | No | n/a v1 |

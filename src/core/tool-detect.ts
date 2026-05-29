@@ -53,6 +53,12 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     linkTarget: ".gemini/skills",
   },
   {
+    id: "copilot",
+    label: "GitHub Copilot CLI",
+    probePaths: [".copilot"],
+    linkTarget: ".copilot/skills",
+  },
+  {
     id: "opencode",
     label: "OpenCode",
     probePaths: [".config/opencode", ".opencode"],

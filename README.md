@@ -191,6 +191,7 @@ This is handy for team-shared, project-specific skills you want to commit to the
 | Codex CLI | Pending spec adoption | Detected, not linked |
 | Cursor | No (uses `.mdc`) | Detected, not linked |
 | Antigravity CLI | Yes | Linked |
+| GitHub Copilot CLI | Yes | Linked |
 | OpenCode | Pending | Detected, not linked |
 | Crush | Pending | Detected, not linked |
 | Aider | No (different model) | Detected, not linked |
