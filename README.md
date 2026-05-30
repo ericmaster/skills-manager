@@ -77,9 +77,11 @@ node bin/skills-manager.js init
 | `remove` | Wired |
 | `customize` | Wired |
 | `new` | Wired |
-| `tool list` / `tool enable` / `tool disable` | Planned (v0.3.0) |
-| `validate` | Planned (v0.3.0) |
-| `doctor` | Wired |
+| `tool list` / `tool enable` / `tool disable` | Wired |
+| `validate` | Wired |
+| `preset` | Wired |
+| `promote` | Wired |
+| `doctor` / `status` | Wired |
 
 See [Roadmap](#roadmap) for what's planned next.
 
@@ -98,10 +100,12 @@ See [Roadmap](#roadmap) for what's planned next.
 | `save-patch <skill>` | Persist your current edits to `patches/<skill>.patch`. | Wired |
 | `customize <skill>` | Open a skill directory in `$EDITOR`. | Wired |
 | `new <name>` | Scaffold a new self-authored skill. | Wired |
-| `tool list` | Show detected tools and which are linked. | Planned (v0.3.0) |
-| `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. | Planned (v0.3.0) |
-| `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. | Planned (v0.3.0) |
-| `doctor` | Print a summary of your environment, dependencies, and any warnings. | Wired |
+| `tool list` | Show detected tools and which are linked. | Wired |
+| `tool enable <name>` / `tool disable <name>` | Opt a detected tool in or out of linking. | Wired |
+| `validate [<skill>]` | Validate one or all skills against the agentskills.io spec. | Wired |
+| `preset <list\|create\|add\|remove>` | Manage skill presets used to bootstrap a scope. | Wired |
+| `promote <skill>` | Migrate a workspace-local skill up to the global SSOT. | Wired |
+| `doctor [--all]` / `status` | Print environment diagnostics; `status` runs across all scopes. | Wired |
 
 ## Adopting existing skills
 
