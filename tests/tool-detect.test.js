@@ -37,7 +37,7 @@ test("detect: copilot detected from ~/.copilot with correct link target", async 
   }
 });
 
-test("detect: antigravity detected from ~/.gemini/antigravity and is linkable", async () => {
+test("detect: antigravity CLI detected from ~/.gemini/antigravity and is linkable", async () => {
   const home = mkdtempSync(join(tmpdir(), "skm-home-detect-agy-"));
   try {
     mkdirSync(join(home, ".gemini", "antigravity"), { recursive: true });
@@ -51,6 +51,27 @@ test("detect: antigravity detected from ~/.gemini/antigravity and is linkable", 
     assert.ok(
       linkable.some((t) => t.id === "antigravity-cli"),
       "antigravity-cli should be linkable",
+    );
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("detect: Antigravity IDE detected from ~/.gemini/antigravity-ide with its own link target", async () => {
+  const home = mkdtempSync(join(tmpdir(), "skm-home-detect-agy-ide-"));
+  try {
+    mkdirSync(join(home, ".gemini", "antigravity-ide"), { recursive: true });
+
+    const detected = await detectTools(home);
+    const ide = detected.find((t) => t.id === "antigravity-ide");
+    assert.ok(ide, "antigravity-ide should be detected");
+    assert.equal(ide.label, "Antigravity IDE");
+    assert.equal(ide.absLinkTarget, join(home, ".gemini/antigravity-ide/skills"));
+
+    const linkable = await listLinkableTools(home);
+    assert.ok(
+      linkable.some((t) => t.id === "antigravity-ide"),
+      "antigravity-ide should be linkable",
     );
   } finally {
     rmSync(home, { recursive: true, force: true });

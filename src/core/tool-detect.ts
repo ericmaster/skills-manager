@@ -53,6 +53,12 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     linkTarget: ".gemini/skills",
   },
   {
+    id: "antigravity-ide",
+    label: "Antigravity IDE",
+    probePaths: [".gemini/antigravity-ide"],
+    linkTarget: ".gemini/antigravity-ide/skills",
+  },
+  {
     id: "copilot",
     label: "GitHub Copilot CLI",
     probePaths: [".copilot"],

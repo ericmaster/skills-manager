@@ -4,7 +4,7 @@ description: Manage agentskills.io-format skills via the skills-manager CLI. Use
 license: MIT
 metadata:
   author: skills-manager
-  version: "0.3.2"
+  version: "0.3.3"
 ---
 
 # skills-manager
@@ -79,6 +79,6 @@ All verbs in this command set are fully implemented and integrated.
 
 ## Limitations to surface honestly
 
-- v1 only links into tools that natively consume the agentskills.io `SKILL.md` spec (Claude Code, Antigravity CLI, GitHub Copilot CLI; Hermes and Openclaw if installed). Cursor, Codex, OpenCode, Crush, and Aider are detected but not yet linked — adapters are on the roadmap.
+- v1 only links into tools that natively consume the agentskills.io `SKILL.md` spec (Claude Code, Antigravity CLI, Antigravity IDE, GitHub Copilot CLI; Hermes and Openclaw if installed). Cursor, Codex, OpenCode, Crush, and Aider are detected but not yet linked — adapters are on the roadmap.
 
 See `ROADMAP.md` in the source repo for full architecture, decisions, and roadmap.
