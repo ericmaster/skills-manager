@@ -57,7 +57,7 @@ test("detect: antigravity CLI detected from ~/.gemini/antigravity and is linkabl
   }
 });
 
-test("detect: Antigravity IDE detected from ~/.gemini/antigravity-ide with its own link target", async () => {
+test("detect: Antigravity IDE detected from ~/.gemini/antigravity-ide and links into global_workflows", async () => {
   const home = mkdtempSync(join(tmpdir(), "skm-home-detect-agy-ide-"));
   try {
     mkdirSync(join(home, ".gemini", "antigravity-ide"), { recursive: true });
@@ -66,7 +66,7 @@ test("detect: Antigravity IDE detected from ~/.gemini/antigravity-ide with its o
     const ide = detected.find((t) => t.id === "antigravity-ide");
     assert.ok(ide, "antigravity-ide should be detected");
     assert.equal(ide.label, "Antigravity IDE");
-    assert.equal(ide.absLinkTarget, join(home, ".gemini/antigravity-ide/skills"));
+    assert.equal(ide.absLinkTarget, join(home, ".gemini/config/global_workflows"));
 
     const linkable = await listLinkableTools(home);
     assert.ok(

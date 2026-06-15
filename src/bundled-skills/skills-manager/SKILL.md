@@ -4,7 +4,7 @@ description: Manage agentskills.io-format skills via the skills-manager CLI. Use
 license: MIT
 metadata:
   author: skills-manager
-  version: "0.3.3"
+  version: "0.3.4"
 ---
 
 # skills-manager
