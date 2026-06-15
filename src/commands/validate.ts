@@ -74,17 +74,80 @@ export async function runValidate(args: {
   }
 }
 
+interface LintFinding {
+  file: string;
+  field: string;
+  level: "error" | "warning" | "info";
+  message: string;
+  fixable?: boolean;
+}
+
+// skills-check's `lint` reports missing author/license/repository as errors, but those
+// are only required to publish a skill to a registry. skills-manager manages skills
+// locally and never publishes them, so these notices are surfaced for awareness but must
+// not fail validation. Malformed publish fields (invalid SPDX id, non-URL repository)
+// carry different messages and remain fatal.
+function isPublishReadinessNotice(f: LintFinding): boolean {
+  return f.level === "error" && /required field for publish/i.test(f.message);
+}
+
 async function validatePath(skillName: string, path: string): Promise<number> {
+  // `skills-check check` is a registry-staleness command that takes no path; the metadata
+  // and format validator is `lint`. Use its JSON output so we can decide pass/fail.
+  let raw: string;
   try {
-    const { stdout, stderr } = await execFile("npx", ["-y", "skills-check", "check", path]);
-    if (stdout) process.stdout.write(stdout);
-    if (stderr) process.stderr.write(stderr);
-    process.stdout.write(`✓ Skill "${skillName}" is valid.\n`);
-    return 0;
+    const { stdout } = await execFile("npx", [
+      "-y",
+      "skills-check",
+      "lint",
+      "--format",
+      "json",
+      path,
+    ]);
+    raw = stdout;
   } catch (err: any) {
-    if (err.stdout) process.stdout.write(err.stdout);
-    if (err.stderr) process.stderr.write(err.stderr);
-    process.stderr.write(`✗ Validation failed for skill "${skillName}"\n`);
+    // lint exits non-zero when it finds errors, but still writes the JSON report to stdout.
+    if (typeof err?.stdout === "string" && err.stdout.trim().startsWith("{")) {
+      raw = err.stdout;
+    } else {
+      if (err?.stdout) process.stdout.write(err.stdout);
+      if (err?.stderr) process.stderr.write(err.stderr);
+      process.stderr.write(
+        `✗ Could not validate skill "${skillName}" (skills-check did not run).\n`,
+      );
+      return 1;
+    }
+  }
+
+  let report: { findings?: LintFinding[] };
+  try {
+    report = JSON.parse(raw);
+  } catch {
+    if (raw) process.stdout.write(raw);
+    process.stderr.write(
+      `✗ Validation failed for skill "${skillName}" (unparseable checker output).\n`,
+    );
     return 1;
   }
+
+  const findings = report.findings ?? [];
+  const fatal = findings.filter((f) => f.level === "error" && !isPublishReadinessNotice(f));
+  const publishNotices = findings.filter(isPublishReadinessNotice);
+
+  for (const f of fatal) {
+    process.stderr.write(`  ✗ ${f.field}: ${f.message}\n`);
+  }
+  for (const f of publishNotices) {
+    process.stdout.write(`  ℹ ${f.field}: ${f.message} (publish-only, not required locally)\n`);
+  }
+
+  if (fatal.length > 0) {
+    process.stderr.write(
+      `✗ Validation failed for skill "${skillName}" (${fatal.length} error${fatal.length === 1 ? "" : "s"}).\n`,
+    );
+    return 1;
+  }
+
+  process.stdout.write(`✓ Skill "${skillName}" is valid.\n`);
+  return 0;
 }

@@ -71,13 +71,19 @@ test("validate: invokes npx skills-check and succeeds for valid skills, fails fo
   writeFileSync(
     npxPath,
     `#!/bin/sh
-if echo "$*" | grep -q "invalid-skill"; then
-  echo "Mock validation error: invalid skill schema" >&2
-  exit 1
-else
-  echo "Mock validation success: SKILL.md is valid"
-  exit 0
-fi
+case "$*" in
+  *invalid-skill*)
+    # Genuine structural error -> must fail validation.
+    echo '{"files":1,"findings":[{"file":"SKILL.md","field":"name","level":"error","message":"Missing required field: name"}],"errors":1,"warnings":0,"infos":0}'
+    exit 1 ;;
+  *publish-skill*)
+    # Only publish-readiness errors -> must NOT fail validation (skmgr never publishes).
+    echo '{"files":1,"findings":[{"file":"SKILL.md","field":"author","level":"error","message":"Missing required field for publish: author"}],"errors":1,"warnings":0,"infos":0}'
+    exit 1 ;;
+  *)
+    echo '{"files":1,"findings":[],"errors":0,"warnings":0,"infos":0}'
+    exit 0 ;;
+esac
 `
   );
   chmodSync(npxPath, 0o755);
@@ -102,6 +108,12 @@ fi
     writeFileSync(join(invalidDir, "SKILL.md"), "invalid frontmatter");
     store.recordAuthoredSkill("invalid-skill");
 
+    // 3. Create a skill that only lacks publish-readiness fields (author/license/repository)
+    const publishDir = join(ssotRoot, "authored", "publish-skill");
+    mkdirSync(publishDir, { recursive: true });
+    writeFileSync(join(publishDir, "SKILL.md"), "---\nname: publish-skill\ndescription: ok\n---\n");
+    store.recordAuthoredSkill("publish-skill");
+
     store.commit();
 
     // Validate specific valid skill -> succeeds
@@ -111,6 +123,10 @@ fi
     // Validate specific invalid skill -> fails
     const exitCodeInvalid = await runValidate({ skill: "invalid-skill", flags: {} });
     assert.equal(exitCodeInvalid, 1);
+
+    // Publish-only missing fields are not required for local skills -> succeeds
+    const exitCodePublish = await runValidate({ skill: "publish-skill", flags: {} });
+    assert.equal(exitCodePublish, 0);
 
     // Validate all skills -> fails overall since one is invalid
     const exitCodeAll = await runValidate({ skill: undefined, flags: {} });
