@@ -282,3 +282,23 @@ test("linkSiteToSkill — rejects relative skillDir", () => {
     rmSync(ws, { recursive: true, force: true });
   }
 });
+
+test("linkSiteToSkill — file strategy links file instead of dir", () => {
+  const ws = tmp("file-strategy");
+  try {
+    const skillDir = makeSkillDir(ws, "file-skill");
+    const linkParent = join(ws, "tool", "skills");
+    mkdirSync(linkParent, { recursive: true });
+    const linkPath = join(linkParent, "file-skill.md");
+    
+    // Simulate linkStrategy="file" where targetPath is skillDir/SKILL.md
+    const targetPath = join(skillDir, "SKILL.md");
+    const result = linkSiteToSkill(linkPath, targetPath, "antigravity-ide", "file");
+    
+    assert.equal(result.status, "linked");
+    assert.ok(lstatSync(linkPath).isSymbolicLink());
+    assert.equal(readlinkSync(linkPath), targetPath);
+  } finally {
+    rmSync(ws, { recursive: true, force: true });
+  }
+});

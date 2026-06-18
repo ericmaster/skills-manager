@@ -52,16 +52,17 @@ function inspect(linkPath: string): LinkSiteState {
 
 export function linkSiteToSkill(
   linkPath: string,
-  skillDir: string,
+  targetPath: string,
   toolId?: string,
+  linkStrategy: "dir" | "file" = "dir",
 ): LinkSiteResult {
   const id = toolId ?? "";
-  if (!isAbsolute(skillDir)) {
+  if (!isAbsolute(targetPath)) {
     return {
       toolId: id,
       linkPath,
       status: "failed",
-      message: `skillDir must be an absolute path; got "${skillDir}"`,
+      message: `targetPath must be an absolute path; got "${targetPath}"`,
     };
   }
   const state = inspect(linkPath);
@@ -75,13 +76,13 @@ export function linkSiteToSkill(
       };
     }
     if (state.kind === "symlink") {
-      if (state.target === skillDir) {
+      if (state.target === targetPath) {
         return { toolId: id, linkPath, status: "already-linked" };
       }
       unlinkSync(linkPath);
     }
     mkdirSync(dirname(linkPath), { recursive: true });
-    symlinkSync(skillDir, linkPath, "dir");
+    symlinkSync(targetPath, linkPath, linkStrategy === "dir" ? "dir" : "file");
     return { toolId: id, linkPath, status: "linked" };
   } catch (err) {
     return {
@@ -95,7 +96,7 @@ export function linkSiteToSkill(
 
 export function unlinkSiteFromSkill(
   linkPath: string,
-  skillDir: string,
+  targetPath: string,
   toolId?: string,
 ): LinkSiteResult {
   const id = toolId ?? "";
@@ -111,12 +112,12 @@ export function unlinkSiteFromSkill(
       message: `Refusing to remove non-symlink at ${linkPath}.`,
     };
   }
-  if (state.target !== skillDir) {
+  if (state.target !== targetPath) {
     return {
       toolId: id,
       linkPath,
       status: "skipped-foreign-target",
-      message: `Symlink at ${linkPath} points at ${state.target ?? "<unreadable>"}, not ${skillDir}.`,
+      message: `Symlink at ${linkPath} points at ${state.target ?? "<unreadable>"}, not ${targetPath}.`,
     };
   }
   try {
@@ -140,8 +141,14 @@ export function linkSkillIntoTools(
   const results: LinkSiteResult[] = [];
   for (const tool of tools) {
     if (!tool.absLinkTarget) continue;
-    const linkPath = join(tool.absLinkTarget, skillName);
-    results.push(linkSiteToSkill(linkPath, skillDir, tool.id));
+    const isFileLink = tool.linkStrategy === "file";
+    const linkPath = isFileLink
+      ? join(tool.absLinkTarget, `${skillName}.md`)
+      : join(tool.absLinkTarget, skillName);
+    const targetPath = isFileLink
+      ? join(skillDir, "SKILL.md")
+      : skillDir;
+    results.push(linkSiteToSkill(linkPath, targetPath, tool.id, isFileLink ? "file" : "dir"));
   }
   return results;
 }
@@ -154,8 +161,14 @@ export function unlinkSkillFromTools(
   const results: LinkSiteResult[] = [];
   for (const tool of tools) {
     if (!tool.absLinkTarget) continue;
-    const linkPath = join(tool.absLinkTarget, skillName);
-    results.push(unlinkSiteFromSkill(linkPath, skillDir, tool.id));
+    const isFileLink = tool.linkStrategy === "file";
+    const linkPath = isFileLink
+      ? join(tool.absLinkTarget, `${skillName}.md`)
+      : join(tool.absLinkTarget, skillName);
+    const targetPath = isFileLink
+      ? join(skillDir, "SKILL.md")
+      : skillDir;
+    results.push(unlinkSiteFromSkill(linkPath, targetPath, tool.id));
   }
   return results;
 }

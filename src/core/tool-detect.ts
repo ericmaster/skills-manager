@@ -15,6 +15,11 @@ export interface ToolRegistryEntry {
    * the tool is detected but skipped during linking.
    */
   linkTarget?: string;
+  /**
+   * If "file", symlinks `<skillDir>/SKILL.md` to `<linkTarget>/<skill>.md`.
+   * If "dir" (default), symlinks `<skillDir>` to `<linkTarget>/<skill>`.
+   */
+  linkStrategy?: "dir" | "file";
 }
 
 export const TOOL_REGISTRY: ToolRegistryEntry[] = [
@@ -57,6 +62,7 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     label: "Antigravity IDE",
     probePaths: [".gemini/antigravity-ide"],
     linkTarget: ".gemini/config/global_workflows",
+    linkStrategy: "file",
   },
   {
     id: "copilot",

@@ -93,14 +93,21 @@ export async function runTool(args: {
           ? join(root.path, "authored", skillName)
           : join(root.path, "skills", skillName);
         
-        const linkPath = join(foundTool.absLinkTarget, skillName);
+        const isFileLink = foundTool.linkStrategy === "file";
+        const linkPath = isFileLink
+          ? join(foundTool.absLinkTarget, `${skillName}.md`)
+          : join(foundTool.absLinkTarget, skillName);
+        const targetPath = isFileLink
+          ? join(skillDir, "SKILL.md")
+          : skillDir;
+          
         if (isEnable) {
-          const res = linkSiteToSkill(linkPath, skillDir, foundTool.id);
+          const res = linkSiteToSkill(linkPath, targetPath, foundTool.id, isFileLink ? "file" : "dir");
           if (res.status === "linked") {
             process.stdout.write(`  ✓ linked ${skillName} into ${args.name} → ${linkPath}\n`);
           }
         } else {
-          const res = unlinkSiteFromSkill(linkPath, skillDir, foundTool.id);
+          const res = unlinkSiteFromSkill(linkPath, targetPath, foundTool.id);
           if (res.status === "unlinked") {
             process.stdout.write(`  ✓ unlinked ${skillName} from ${args.name}\n`);
           }
