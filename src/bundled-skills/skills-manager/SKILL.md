@@ -51,6 +51,7 @@ Run `skills-manager <verb> [args]` from a terminal.
 | `new <name>` | Scaffold a new self-authored skill in `authored/<name>/`. |
 | `preset <list\|create\|add\|remove>` | Configure custom presets, add/remove skills, or list presets. |
 | `promote <skill>` | Migrate a workspace-local skill (authored or contrib) to the global SSOT. |
+| `link-local [dir] [--dry-run]` | Bridge a repo's `.agents/skills/*` packs into per-tool project dirs (`.claude/skills`) via relative, clone-portable symlinks, for tools that don't read `.agents/skills` natively. |
 | `tool list` | Show detected tools and which are link targets. |
 | `tool enable <name>` / `tool disable <name>` | Enable or disable a tool for symlink linking immediately. |
 | `validate [<skill>]` | Validate a skill (or all skills) via `skills-check` subprocess. |
