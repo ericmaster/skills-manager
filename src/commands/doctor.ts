@@ -86,8 +86,8 @@ async function checkSsot(
       continue;
     }
 
-    for (const rawName of entries) {
-      const linkPath = join(tool.absLinkTarget, rawName);
+    for (const name of entries) {
+      const linkPath = join(tool.absLinkTarget, name);
       const stat = safeLstat(linkPath);
       if (!stat) continue;
 
@@ -96,37 +96,27 @@ async function checkSsot(
         if (!rawTarget) {
           diag.brokenLinks.push({
             toolId: tool.id,
-            skillName: rawName,
+            skillName: name,
             target: "<unknown>",
             reason: "Failed to read symlink target",
           });
           continue;
         }
 
-        const isFileLink = tool.linkStrategy === "file";
-        let skillName = rawName;
-        if (isFileLink && rawName.endsWith(".md")) {
-          skillName = rawName.slice(0, -3);
-        }
-
         const absTarget = resolve(tool.absLinkTarget, rawTarget);
         const insideSsot = absTarget.startsWith(rootPath);
 
         if (insideSsot) {
-          const expectedAuthored = isFileLink
-            ? join(rootPath, "authored", skillName, "SKILL.md")
-            : join(rootPath, "authored", skillName);
-          const expectedContrib = isFileLink
-            ? join(rootPath, "skills", skillName, "SKILL.md")
-            : join(rootPath, "skills", skillName);
+          const expectedAuthored = join(rootPath, "authored", name);
+          const expectedContrib = join(rootPath, "skills", name);
           const pointsToCorrectName = absTarget === expectedAuthored || absTarget === expectedContrib;
           const targetExists = existsSync(absTarget);
-          const registered = store ? store.skill(skillName) : null;
+          const registered = store ? store.skill(name) : null;
 
           if (pointsToCorrectName && targetExists && registered) {
             diag.healthyLinks.push({
               toolId: tool.id,
-              skillName: skillName,
+              skillName: name,
               target: absTarget,
             });
           } else {
@@ -138,7 +128,7 @@ async function checkSsot(
             }
             diag.brokenLinks.push({
               toolId: tool.id,
-              skillName: skillName,
+              skillName: name,
               target: absTarget,
               reason,
             });
@@ -146,7 +136,7 @@ async function checkSsot(
         } else {
           diag.foreignLinks.push({
             toolId: tool.id,
-            skillName: skillName,
+            skillName: name,
             target: absTarget,
           });
         }

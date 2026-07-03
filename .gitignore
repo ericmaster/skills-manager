@@ -13,6 +13,3 @@ dist-tests/
 .vscode/
 
 .tmp_*
-
-# Agent session worktrees (ephemeral)
-.claude/worktrees/
