@@ -13,7 +13,6 @@ import { runDoctor } from "./commands/doctor.js";
 import { runAdopt } from "./commands/adopt.js";
 import { runPreset } from "./commands/preset.js";
 import { runPromote } from "./commands/promote.js";
-import { runLinkLocal } from "./commands/link-local.js";
 
 interface ParsedArgs {
   command: string | undefined;
@@ -69,9 +68,6 @@ Commands:
   preset <list|create|add|remove> [name] [skill]
                               Manage skill presets.
   promote <skill>             Promote a workspace skill to the global SSOT.
-  link-local [dir] [--dry-run]
-                              Bridge a repo's .agents/skills/* into per-tool project dirs (.claude/skills)
-                              via relative symlinks, for tools that don't read .agents/skills natively.
   status                      Alias for doctor --all.
   doctor                      Print environment and configuration diagnostics.
   help                        Show this help.
@@ -137,8 +133,6 @@ export async function main(rawArgs: string[]): Promise<number> {
           skill: positional[0],
           flags,
         });
-      case "link-local":
-        return await runLinkLocal({ dir: positional[0], flags });
       case "status":
         return await runDoctor({
           flags: { ...flags, all: true },
