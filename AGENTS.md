@@ -141,7 +141,6 @@ Adoption (`adopt <name>` / `adopt --all`):
 | `tool enable <name>` / `tool disable <name>` | Planned (v0.3.0) | Opt a detected tool in or out of linking. |
 | `validate [<skill>]` | Planned (v0.3.0) | Wraps `skills-check`. |
 | `promote <skill>` | Planned (v0.3.0) | Move/promote a workspace-local skill to the global SSOT. |
-| `link-local [dir] [--dry-run]` | Wired | Bridge a repo's `.agents/skills/*` packs into per-tool project skill dirs (`.claude/skills`) via relative, clone-portable symlinks — for tools that don't yet read the tool-agnostic `.agents/skills` convention natively. Idempotent; refuses to clobber real dirs. |
 | `doctor [--all]` / `status` | Planned (v0.3.0) | Print global diagnostic status, active SSOTs, link sites, and workspace overviews. |
 | `doctor` | Wired | Print SSOT root, detected tools, dependencies, warnings. |
 
