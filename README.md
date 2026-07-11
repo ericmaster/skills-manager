@@ -197,6 +197,7 @@ This is handy for team-shared, project-specific skills you want to commit to the
 | Antigravity CLI | Yes | Linked |
 | Antigravity IDE | Yes | Linked |
 | GitHub Copilot CLI | Yes | Linked |
+| Pi | Yes | Linked |
 | OpenCode | Pending | Detected, not linked |
 | Crush | Pending | Detected, not linked |
 | Aider | No (different model) | Detected, not linked |

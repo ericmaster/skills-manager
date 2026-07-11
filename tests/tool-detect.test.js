@@ -45,7 +45,7 @@ test("detect: antigravity CLI detected from ~/.gemini/antigravity and is linkabl
     const detected = await detectTools(home);
     const agy = detected.find((t) => t.id === "antigravity-cli");
     assert.ok(agy, "antigravity-cli should be detected");
-    assert.equal(agy.absLinkTarget, join(home, ".gemini/skills"));
+    assert.equal(agy.absLinkTarget, join(home, ".gemini/config/skills"));
 
     const linkable = await listLinkableTools(home);
     assert.ok(
@@ -83,6 +83,23 @@ test("detect: empty home detects no tools", async () => {
   try {
     const detected = await detectTools(home);
     assert.equal(detected.length, 0, "no tools should be detected in empty home");
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("detect: pi detected from ~/.agents and is linkable", async () => {
+  const home = mkdtempSync(join(tmpdir(), "skm-home-detect-pi-"));
+  try {
+    mkdirSync(join(home, ".agents"), { recursive: true });
+
+    const detected = await detectTools(home);
+    const pi = detected.find((t) => t.id === "pi");
+    assert.ok(pi, "pi should be detected when ~/.agents exists");
+    assert.equal(pi.absLinkTarget, join(home, ".agents/skills"));
+
+    const linkable = await listLinkableTools(home);
+    assert.ok(linkable.some((t) => t.id === "pi"), "pi should be linkable");
   } finally {
     rmSync(home, { recursive: true, force: true });
   }

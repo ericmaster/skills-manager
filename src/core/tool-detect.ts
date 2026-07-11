@@ -55,7 +55,7 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     id: "antigravity-cli",
     label: "Antigravity CLI",
     probePaths: [".gemini/antigravity", ".config/antigravity"],
-    linkTarget: ".gemini/skills",
+    linkTarget: ".gemini/config/skills",
   },
   {
     id: "antigravity-ide",
@@ -63,6 +63,12 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
     probePaths: [".gemini/antigravity-ide"],
     linkTarget: ".gemini/config/global_workflows",
     linkStrategy: "file",
+  },
+  {
+    id: "pi",
+    label: "Pi",
+    probePaths: [".agents"],
+    linkTarget: ".agents/skills",
   },
   {
     id: "copilot",
