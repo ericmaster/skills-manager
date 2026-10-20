@@ -169,3 +169,11 @@ Load-bearing decisions are recorded as ADRs in [docs/adr/](docs/adr/). Read the 
 - **Testing:** `node --test` (built-in runner) for v1, no extra deps.
 - **Commits:** Conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
 - **Distribution:** `npm publish` as `skills-manager`; `npx skills-manager <verb>` or global install.
+
+## Documentation lifecycle
+
+Keep specs and other non-ADR docs current-state only; do not use them as changelogs, timelines,
+release notes, or historical change logs. Before release, ADRs may be edited, merged, or
+squashed to retain the latest decision; after release, preserve published ADRs and record later
+decisions in a new superseding ADR. Apply the `context-hygiene` skill before documentation or
+spec writes; link each fact to its SSOT instead of duplicating it.
