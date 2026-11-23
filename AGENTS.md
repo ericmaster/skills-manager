@@ -61,8 +61,7 @@ The CLI shells out to `npx skills <verb> ...` for source resolution and tool ins
 | openclaw | `~/.openclaw/` exists | Yes (assumed) | `~/.openclaw/skills/` |
 | Codex CLI | `codex` on PATH or `~/.codex/` | Pending | n/a v1 |
 | Cursor | `~/.config/Cursor/` or app dir | No (`.mdc`) | n/a v1 |
-| Antigravity CLI | `~/.gemini/antigravity/` exists | Yes | `~/.gemini/config/skills/` |
-| Antigravity IDE | `~/.gemini/antigravity-ide/` exists | Yes | `~/.gemini/config/global_workflows/` |
+| Antigravity (App, CLI, IDE) | `~/.gemini/antigravity/`, `~/.config/antigravity/`, `~/.gemini/antigravity-cli/`, or `~/.gemini/antigravity-ide/` | Yes | `~/.gemini/config/skills/` |
 | GitHub Copilot CLI | `~/.copilot/` exists | Yes | `~/.copilot/skills/` |
 | Pi | `~/.agents/` exists | Yes | `~/.agents/skills/` |
 | OpenCode | `~/.config/opencode/` exists | Pending | n/a v1 |
@@ -70,6 +69,9 @@ The CLI shells out to `npx skills <verb> ...` for source resolution and tool ins
 | Aider | `aider` on PATH | No | n/a v1 |
 
 Non-native tools listed in `doctor` output, skipped during linking with a "v1 limitation" note. Adapters deferred.
+
+Antigravity surfaces share the `antigravity-cli` tool ID and enable switch. The
+manager does not create or remove legacy `global_workflows/` entries.
 
 ## Source resolution
 

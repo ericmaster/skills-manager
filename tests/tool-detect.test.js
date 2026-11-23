@@ -57,22 +57,18 @@ test("detect: antigravity CLI detected from ~/.gemini/antigravity and is linkabl
   }
 });
 
-test("detect: Antigravity IDE detected from ~/.gemini/antigravity-ide and links into global_workflows", async () => {
+test("detect: Antigravity IDE alone or with CLI uses one shared native skills target", async () => {
   const home = mkdtempSync(join(tmpdir(), "skm-home-detect-agy-ide-"));
   try {
     mkdirSync(join(home, ".gemini", "antigravity-ide"), { recursive: true });
 
-    const detected = await detectTools(home);
-    const ide = detected.find((t) => t.id === "antigravity-ide");
-    assert.ok(ide, "antigravity-ide should be detected");
-    assert.equal(ide.label, "Antigravity IDE");
-    assert.equal(ide.absLinkTarget, join(home, ".gemini/config/global_workflows"));
-
-    const linkable = await listLinkableTools(home);
-    assert.ok(
-      linkable.some((t) => t.id === "antigravity-ide"),
-      "antigravity-ide should be linkable",
-    );
+    for (const withCli of [false, true]) {
+      if (withCli) mkdirSync(join(home, ".gemini", "antigravity-cli"));
+      const targets = await listLinkableTools(home);
+      assert.deepEqual(targets.map((t) => t.id), ["antigravity-cli"]);
+      assert.equal(targets[0].absLinkTarget, join(home, ".gemini/config/skills"));
+      assert.notEqual(targets[0].linkStrategy, "file");
+    }
   } finally {
     rmSync(home, { recursive: true, force: true });
   }

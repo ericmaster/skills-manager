@@ -53,16 +53,10 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
   },
   {
     id: "antigravity-cli",
-    label: "Antigravity CLI",
-    probePaths: [".gemini/antigravity", ".config/antigravity"],
+    label: "Antigravity",
+    // Spec: AGENTS.md#tool-detection — all surfaces share one enable switch and target.
+    probePaths: [".gemini/antigravity", ".config/antigravity", ".gemini/antigravity-cli", ".gemini/antigravity-ide"],
     linkTarget: ".gemini/config/skills",
-  },
-  {
-    id: "antigravity-ide",
-    label: "Antigravity IDE",
-    probePaths: [".gemini/antigravity-ide"],
-    linkTarget: ".gemini/config/global_workflows",
-    linkStrategy: "file",
   },
   {
     id: "pi",
